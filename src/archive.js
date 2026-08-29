@@ -42,7 +42,7 @@ const archiveViewer = createArchiveViewer(viewer, document.querySelector("#viewe
 let works = await listWorks();
 let visibleWorks = works;
 const selectedIds = new Set();
-await repairMissingCreators();
+await repairMissingMetadata();
 render(works);
 const initialFolder = await getArchiveFolder();
 showFolderName(initialFolder);
@@ -293,7 +293,9 @@ function card(work) {
   article.querySelector("[data-source]").href = work.sourceUrl;
   const query = [work.id, work.title, work.creatorName, "pixiv"].filter(Boolean).join(" ");
   article.querySelector("[data-google]").href = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
-  article.querySelector("[data-view]").addEventListener("click", () => archiveViewer.showImages(work));
+  const viewButton = article.querySelector("[data-view]");
+  viewButton.textContent = work.imageCount === 0 ? "元画像を探す" : "画像を開く";
+  viewButton.addEventListener("click", () => archiveViewer.showImages(work));
   article.querySelector("[data-metadata]").addEventListener("click", () => archiveViewer.showMetadata(work));
   article.querySelector(".thumb").addEventListener("click", () => archiveViewer.showImages(work));
   article.querySelector("[data-delete]").addEventListener("click", async () => {
@@ -311,8 +313,8 @@ function card(work) {
   return article;
 }
 
-async function repairMissingCreators() {
-  const missing = works.filter((work) => !work.creatorName);
+async function repairMissingMetadata() {
+  const missing = works.filter((work) => !work.creatorName || !Array.isArray(work.originalImageUrls));
   await Promise.allSettled(missing.map(async (work) => {
     const result = await chrome.runtime.sendMessage({
       type: "REFRESH_WORK_METADATA",

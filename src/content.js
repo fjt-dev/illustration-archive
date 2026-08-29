@@ -38,40 +38,32 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   return false;
 });
 
-let autoSaveTimer;
-let retryTimer;
-let lastArtworkId;
-let artworkWatchTimer;
+let autoRecordTimer;
 let disposed = false;
 
-function scheduleAutoSave(delay = 700, retry = false, bookmarkAction = false) {
+function scheduleAutoRecord(delay = 700) {
   if (disposed) return;
-  clearTimeout(autoSaveTimer);
-  autoSaveTimer = setTimeout(async () => {
+  clearTimeout(autoRecordTimer);
+  autoRecordTimer = setTimeout(async () => {
     if (disposed) return;
     try {
       const work = currentWork();
-      lastArtworkId = work.id;
       const result = await chrome.runtime.sendMessage({
         type: "AUTO_ARCHIVE_WORK",
         work,
-        bookmarkAction
+        bookmarkAction: true
       });
       if (!result?.ok) {
         showNotice(result?.error || "自動記録に失敗しました", true);
         return;
       }
       if (result?.ok && !result.skipped) showSavedNotice();
-      if (retry && result?.reason === "not-bookmarked") {
-        clearTimeout(retryTimer);
-        retryTimer = setTimeout(() => scheduleAutoSave(0), 2200);
-      }
     } catch (error) {
       if (isInvalidatedContext(error)) {
         dispose();
         return;
       }
-      console.warn("Illustration Archive: automatic saving failed", error);
+      console.warn("Illustration Archive: automatic recording failed", error);
     }
   }, delay);
 }
@@ -82,9 +74,7 @@ function isInvalidatedContext(error) {
 
 function dispose() {
   disposed = true;
-  clearTimeout(autoSaveTimer);
-  clearTimeout(retryTimer);
-  clearInterval(artworkWatchTimer);
+  clearTimeout(autoRecordTimer);
   document.removeEventListener("click", handlePageClick, true);
 }
 
@@ -108,11 +98,9 @@ function showNotice(message, isError = false) {
   setTimeout(() => notice.remove(), 2500);
 }
 
-scheduleAutoSave();
-
 function handlePageClick(event) {
-  const bookmarkAction = isBookmarkAction(event);
-  scheduleAutoSave(850, true, bookmarkAction);
+  if (!isBookmarkAction(event)) return;
+  scheduleAutoRecord(850);
 }
 
 function isBookmarkAction(event) {
@@ -129,9 +117,4 @@ function isBookmarkAction(event) {
 }
 
 document.addEventListener("click", handlePageClick, true);
-
-artworkWatchTimer = setInterval(() => {
-  const id = location.pathname.match(/\/artworks\/(\d+)/)?.[1];
-  if (id && id !== lastArtworkId) scheduleAutoSave(300);
-}, 1000);
 })();

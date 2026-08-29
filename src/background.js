@@ -73,17 +73,14 @@ async function archiveWork(work, suppliedDetails) {
 
   const images = [];
   const includeImages = await shouldIncludeImages();
-  if (includeImages) {
-    const imageUrls = await getArtworkImageUrls(work.id);
-    for (const url of imageUrls) {
-      const response = await fetch(url, { credentials: "include" });
-      if (!response.ok) throw new Error(`画像取得に失敗しました (${response.status})`);
-      const blob = await response.blob();
-      images.push({ blob, mimeType: blob.type || "application/octet-stream" });
-    }
-  }
+  const imageReferences = await getImageReferences(work.id, { required: includeImages });
+  if (includeImages) images.push(...await downloadImages(imageReferences.originalImageUrls));
 
-  const storedWork = { ...work, includesImages: includeImages };
+  const storedWork = {
+    ...work,
+    includesImages: includeImages,
+    ...imageReferences
+  };
   delete storedWork.imageUrls;
   let folder;
   try {
@@ -174,9 +171,41 @@ function metadataFromDetails(details, fallback = {}) {
 async function refreshWorkMetadata(workId) {
   if (!workId) throw new Error("作品IDがありません");
   const details = await getArtworkDetails(workId);
-  const metadata = metadataFromDetails(details);
+  const metadata = {
+    ...metadataFromDetails(details),
+    ...await getImageReferences(workId)
+  };
   await updateWorkMetadata(workId, metadata);
   return metadata;
+}
+
+async function getImageReferences(workId, { required = false } = {}) {
+  let originalImageUrls = [];
+  try {
+    originalImageUrls = await getArtworkImageUrls(workId);
+  } catch (error) {
+    if (required) throw error;
+  }
+  return {
+    originalImageUrls,
+    originalImageFileNames: originalImageUrls.map(imageFileName).filter(Boolean)
+  };
+}
+
+function imageFileName(url) {
+  try { return decodeURIComponent(new URL(url).pathname.split("/").pop() || ""); }
+  catch { return ""; }
+}
+
+async function downloadImages(urls) {
+  const images = [];
+  for (const url of urls) {
+    const response = await fetch(url, { credentials: "include" });
+    if (!response.ok) throw new Error(`画像取得に失敗しました (${response.status})`);
+    const blob = await response.blob();
+    images.push({ blob, mimeType: blob.type || "application/octet-stream" });
+  }
+  return images;
 }
 
 async function getArtworkImageUrls(workId) {

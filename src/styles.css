@@ -172,6 +172,12 @@ dialog::backdrop { background: var(--overlay); backdrop-filter: blur(4px); }
 #viewer-content .viewer-source a { max-width: min(440px, 70vw); padding: 0; overflow: hidden; color: #0096fa; background: transparent; text-overflow: ellipsis; white-space: nowrap; }
 #viewer-content .viewer-source a:hover { text-decoration: underline; text-underline-offset: 3px; }
 #viewer-content img { display: block; max-width: 100%; margin: 18px auto; }
+.recovery-panel { margin-top: 24px; padding: 20px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+.recovery-panel h3 { margin: 0 0 8px; font-size: 17px; }
+.recovery-panel p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.7; }
+.recovery-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.recovery-actions a { padding: 9px 12px; color: var(--text); background: var(--control); font-size: 13px; font-weight: 600; }
+.recovery-actions a:hover { background: var(--control-hover); }
 .metadata-list { display: grid; grid-template-columns: 120px minmax(0, 1fr); margin: 24px 0 0; border-top: 1px solid var(--border); }
 .metadata-list dt, .metadata-list dd { margin: 0; padding: 12px 10px; border-bottom: 1px solid var(--border); line-height: 1.6; }
 .metadata-list dt { color: var(--muted); font-size: 13px; font-weight: 600; }
