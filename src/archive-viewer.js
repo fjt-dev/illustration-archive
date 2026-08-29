@@ -3,6 +3,15 @@ import { readArchiveImages } from "./folder.js";
 import { formatBytes, formatDate, htmlToPlainText } from "./utils.js";
 
 export function createArchiveViewer(dialog, content) {
+  function openViewer() {
+    if (!dialog.open) dialog.showModal();
+    document.documentElement.classList.add("viewer-open");
+  }
+
+  dialog.addEventListener("close", () => {
+    document.documentElement.classList.remove("viewer-open");
+  });
+
   async function loadImages(work) {
     const browserImages = await getImages(work.id);
     return browserImages.length ? browserImages : readArchiveImages(work);
@@ -33,11 +42,11 @@ export function createArchiveViewer(dialog, content) {
   async function showImages(work) {
     if (work.imageCount === 0) {
       content.textContent = "この記録に画像は含まれていません。";
-      dialog.showModal();
+      openViewer();
       return;
     }
     content.textContent = "読み込み中…";
-    dialog.showModal();
+    openViewer();
 
     let images;
     try {
@@ -47,8 +56,22 @@ export function createArchiveViewer(dialog, content) {
       return;
     }
 
+    const heading = document.createElement("div");
+    heading.className = "viewer-heading";
     const title = document.createElement("h2");
     title.textContent = `${work.title} — ${work.creatorName || "作者不明"}`;
+    const source = document.createElement("div");
+    source.className = "viewer-source";
+    const workId = document.createElement("span");
+    workId.textContent = `ID: ${work.id}`;
+    const sourceUrl = work.sourceUrl || `https://www.pixiv.net/artworks/${work.id}`;
+    const sourceLink = document.createElement("a");
+    sourceLink.href = sourceUrl;
+    sourceLink.target = "_blank";
+    sourceLink.rel = "noreferrer";
+    sourceLink.textContent = sourceUrl;
+    source.append(workId, sourceLink);
+    heading.append(title, source);
     const imageNodes = images.map((image) => {
       const node = new Image();
       const url = URL.createObjectURL(image.blob);
@@ -57,7 +80,7 @@ export function createArchiveViewer(dialog, content) {
       node.onerror = () => URL.revokeObjectURL(url);
       return node;
     });
-    content.replaceChildren(title, ...imageNodes);
+    content.replaceChildren(heading, ...imageNodes);
   }
 
   function showMetadata(work) {
@@ -88,7 +111,7 @@ export function createArchiveViewer(dialog, content) {
       list.append(term, description);
     });
     content.replaceChildren(title, list);
-    dialog.showModal();
+    openViewer();
   }
 
   return { loadThumbnail, showImages, showMetadata };

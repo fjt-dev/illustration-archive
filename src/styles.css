@@ -54,6 +54,7 @@
   }
 }
 body { margin: 0; background: var(--bg); color: var(--text); }
+html.viewer-open { overflow: hidden; }
 button, input, a { font: inherit; }
 button, a { border: 0; border-radius: 8px; padding: 9px 12px; cursor: pointer; text-decoration: none; }
 button { background: var(--control); color: var(--text); }
@@ -163,6 +164,11 @@ dialog {
 }
 dialog::backdrop { background: var(--overlay); backdrop-filter: blur(4px); }
 #viewer-content { box-sizing: border-box; max-height: calc(90vh - 72px); padding-right: 10px; overflow: auto; scrollbar-gutter: stable; }
+#viewer-content .viewer-heading { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px 20px; }
+#viewer-content .viewer-heading h2 { margin: 0; }
+#viewer-content .viewer-source { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; color: var(--muted); font-size: 12px; }
+#viewer-content .viewer-source a { max-width: min(440px, 70vw); padding: 0; overflow: hidden; color: #0096fa; background: transparent; text-overflow: ellipsis; white-space: nowrap; }
+#viewer-content .viewer-source a:hover { text-decoration: underline; text-underline-offset: 3px; }
 #viewer-content img { display: block; max-width: 100%; margin: 18px auto; }
 .metadata-list { display: grid; grid-template-columns: 120px minmax(0, 1fr); margin: 24px 0 0; border-top: 1px solid var(--border); }
 .metadata-list dt, .metadata-list dd { margin: 0; padding: 12px 10px; border-bottom: 1px solid var(--border); line-height: 1.6; }
