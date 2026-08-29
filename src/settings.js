@@ -1,4 +1,5 @@
 const AUTO_SAVE_CONSENT_VERSION = 1;
+const IMAGE_RECORDING_CONSENT_VERSION = 1;
 const USAGE_CONSENT_VERSION = 1;
 
 const KEYS = {
@@ -7,8 +8,41 @@ const KEYS = {
   autoSaveConsentedAt: "autoSaveConsentedAt",
   usageConsentVersion: "usageConsentVersion",
   usageConsentedAt: "usageConsentedAt",
-  onboardingCompleted: "onboardingCompleted"
+  onboardingCompleted: "onboardingCompleted",
+  includeImages: "includeImages",
+  imageRecordingConsentVersion: "imageRecordingConsentVersion",
+  imageRecordingConsentedAt: "imageRecordingConsentedAt"
 };
+
+export async function shouldIncludeImages() {
+  const settings = await chrome.storage.local.get([
+    KEYS.includeImages,
+    KEYS.imageRecordingConsentVersion
+  ]);
+  return settings.includeImages === true
+    && settings.imageRecordingConsentVersion === IMAGE_RECORDING_CONSENT_VERSION;
+}
+
+export async function enableImageRecording() {
+  await chrome.storage.local.set({
+    [KEYS.includeImages]: true,
+    [KEYS.imageRecordingConsentVersion]: IMAGE_RECORDING_CONSENT_VERSION,
+    [KEYS.imageRecordingConsentedAt]: new Date().toISOString()
+  });
+}
+
+export async function disableImageRecording() {
+  await chrome.storage.local.set({ [KEYS.includeImages]: false });
+}
+
+export function onIncludeImagesChanged(callback) {
+  const listener = (changes, area) => {
+    if (area !== "local" || !changes[KEYS.includeImages]) return;
+    shouldIncludeImages().then(callback);
+  };
+  chrome.storage.onChanged.addListener(listener);
+  return () => chrome.storage.onChanged.removeListener(listener);
+}
 
 export async function isAutoSaveEnabled() {
   const settings = await chrome.storage.local.get([

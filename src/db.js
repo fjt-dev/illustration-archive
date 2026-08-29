@@ -86,7 +86,7 @@ export async function updateWorkMetadata(workId, metadata) {
   const work = await requestResult(store.get(workId));
   if (!work) {
     db.close();
-    throw new Error("保存済み作品が見つかりませんでした");
+    throw new Error("記録済み作品が見つかりませんでした");
   }
   store.put({ ...work, ...metadata });
   await complete(tx);

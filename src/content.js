@@ -58,7 +58,7 @@ function scheduleAutoSave(delay = 700, retry = false, bookmarkAction = false) {
         bookmarkAction
       });
       if (!result?.ok) {
-        showNotice(result?.error || "自動保存に失敗しました", true);
+        showNotice(result?.error || "自動記録に失敗しました", true);
         return;
       }
       if (result?.ok && !result.skipped) showSavedNotice();
@@ -89,7 +89,7 @@ function dispose() {
 }
 
 function showSavedNotice() {
-  showNotice("ローカルに保存しました");
+  showNotice("作品を記録しました");
 }
 
 function showNotice(message, isError = false) {

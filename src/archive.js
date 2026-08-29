@@ -13,11 +13,14 @@ import { createArchiveViewer } from "./archive-viewer.js";
 import {
   completeOnboarding,
   disableAutoSave,
+  disableImageRecording,
   enableAutoSave,
+  enableImageRecording,
   getFirstRunState,
   isAutoSaveEnabled,
   onAutoSaveChanged,
-  recordUsageConsent
+  recordUsageConsent,
+  shouldIncludeImages
 } from "./settings.js";
 
 const themeButton = document.querySelector("#theme-toggle");
@@ -31,7 +34,9 @@ const onboarding = document.querySelector("#onboarding");
 const usageConsent = document.querySelector("#usage-consent");
 const shortcutsDialog = document.querySelector("#shortcuts-dialog");
 const archiveAutoSave = document.querySelector("#archive-auto-save");
+const archiveIncludeImages = document.querySelector("#archive-include-images");
 const archiveAutoSaveConsent = document.querySelector("#archive-auto-save-consent");
+const imageRecordingConsent = document.querySelector("#image-recording-consent");
 const restoreFolderAccess = document.querySelector("#restore-folder-access");
 const archiveViewer = createArchiveViewer(viewer, document.querySelector("#viewer-content"));
 let works = await listWorks();
@@ -43,7 +48,28 @@ const initialFolder = await getArchiveFolder();
 showFolderName(initialFolder);
 await updateFolderAccess(initialFolder);
 archiveAutoSave.checked = await isAutoSaveEnabled();
+archiveIncludeImages.checked = await shouldIncludeImages();
 onAutoSaveChanged((enabled) => { archiveAutoSave.checked = enabled; });
+
+archiveIncludeImages.addEventListener("change", async () => {
+  if (!archiveIncludeImages.checked) {
+    await disableImageRecording();
+    return;
+  }
+  archiveIncludeImages.checked = false;
+  imageRecordingConsent.showModal();
+});
+
+document.querySelector("#image-consent-cancel").addEventListener("click", () => {
+  archiveIncludeImages.checked = false;
+  imageRecordingConsent.close();
+});
+
+document.querySelector("#image-consent-agree").addEventListener("click", async () => {
+  await enableImageRecording();
+  archiveIncludeImages.checked = true;
+  imageRecordingConsent.close();
+});
 
 archiveAutoSave.addEventListener("change", async () => {
   if (!archiveAutoSave.checked) {
@@ -213,24 +239,25 @@ document.querySelector("#choose-folder").addEventListener("click", async () => {
         failures += 1;
       }
     }
-    if (failures) alert(`${failures}作品を新しい保存先へコピーできませんでした`);
+    if (failures) alert(`${failures}作品を新しい記録先へコピーできませんでした`);
   } catch (error) {
     if (error.name !== "AbortError") alert(error.message);
   } finally {
     button.disabled = false;
-    button.textContent = "保存先";
+    button.textContent = "記録先";
   }
 });
 
 function render(items) {
   summary.textContent = `${works.length}作品・${formatBytes(works.reduce((sum, work) => sum + (work.byteSize || 0), 0))}`;
   grid.replaceChildren(...items.map(card));
-  if (!items.length) grid.textContent = "保存済み作品はありません。";
+  if (!items.length) grid.textContent = "記録済み作品はありません。";
   updateSelectionControls();
 }
 
 function card(work) {
   const article = document.querySelector("#work-card-template").content.firstElementChild.cloneNode(true);
+  article.classList.toggle("metadata-only", work.imageCount === 0);
   article.setAttribute("aria-label", `${work.title}を選択`);
   const checkbox = article.querySelector(".select-work input");
   checkbox.checked = selectedIds.has(work.id);
@@ -297,8 +324,8 @@ async function repairMissingCreators() {
 
 function showFolderName(handle) {
   document.querySelector("#folder-name").textContent = handle
-    ? `保存先: ${handle.name}`
-    : "保存先: 未選択";
+    ? `記録先: ${handle.name}`
+    : "記録先: 未選択";
 }
 
 async function updateFolderAccess(handle) {

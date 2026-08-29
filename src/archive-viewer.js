@@ -9,6 +9,10 @@ export function createArchiveViewer(dialog, content) {
   }
 
   async function loadThumbnail(node, work) {
+    if (work.imageCount === 0) {
+      node.textContent = "メタデータのみ";
+      return;
+    }
     let image;
     try {
       [image] = await loadImages(work);
@@ -27,6 +31,11 @@ export function createArchiveViewer(dialog, content) {
   }
 
   async function showImages(work) {
+    if (work.imageCount === 0) {
+      content.textContent = "この記録に画像は含まれていません。";
+      dialog.showModal();
+      return;
+    }
     content.textContent = "読み込み中…";
     dialog.showModal();
 
@@ -53,7 +62,7 @@ export function createArchiveViewer(dialog, content) {
 
   function showMetadata(work) {
     const title = document.createElement("h2");
-    title.textContent = "保存メタデータ";
+    title.textContent = "記録メタデータ";
     const fields = [
       ["作品ID", work.id],
       ["タイトル", work.title],
@@ -62,9 +71,10 @@ export function createArchiveViewer(dialog, content) {
       ["タグ", work.tags?.length ? work.tags.join(" / ") : "なし"],
       ["説明", htmlToPlainText(work.description) || "なし"],
       ["投稿日", formatDate(work.postedAt)],
-      ["保存日時", formatDate(work.archivedAt)],
+      ["記録日時", formatDate(work.archivedAt)],
       ["ページ数", `${work.pageCount || work.imageCount || 0}ページ`],
-      ["保存容量", formatBytes(work.byteSize)],
+      ["記録内容", work.imageCount > 0 ? "メタデータと画像" : "メタデータのみ"],
+      ["記録容量", formatBytes(work.byteSize)],
       ["元URL", work.sourceUrl || "なし"]
     ];
 

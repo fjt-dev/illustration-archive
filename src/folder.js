@@ -23,7 +23,7 @@ function requestResult(request) {
 
 export async function chooseArchiveFolder() {
   if (!("showDirectoryPicker" in globalThis)) {
-    throw new Error("このブラウザは保存先フォルダーの選択に対応していません");
+    throw new Error("このブラウザは記録先フォルダーの選択に対応していません");
   }
   const handle = await globalThis.showDirectoryPicker({ mode: "readwrite" });
   const permission = await handle.requestPermission({ mode: "readwrite" });
@@ -95,13 +95,13 @@ export async function saveArchiveToFolder(work, images) {
 
 export async function readArchiveImages(work) {
   const root = await getArchiveFolder();
-  if (!root) throw new Error("保存先フォルダーが選択されていません");
+  if (!root) throw new Error("記録先フォルダーが選択されていません");
   return readArchiveImagesFromFolder(root, work);
 }
 
 export async function readArchiveImagesFromFolder(root, work) {
   if (await root.queryPermission({ mode: "read" }) !== "granted") {
-    throw new Error("保存先フォルダーへのアクセス許可が必要です");
+    throw new Error("記録先フォルダーへのアクセス許可が必要です");
   }
 
   const directoryName = work.folderDirectoryName || safeName(`${work.id}_${work.title || "untitled"}`);

@@ -1,6 +1,11 @@
 import { initTheme } from "./theme.js";
 import { formatBytes } from "./utils.js";
-import { isAutoSaveEnabled, onAutoSaveChanged } from "./settings.js";
+import {
+  isAutoSaveEnabled,
+  onAutoSaveChanged,
+  onIncludeImagesChanged,
+  shouldIncludeImages
+} from "./settings.js";
 
 await initTheme();
 
@@ -9,11 +14,19 @@ const save = document.querySelector("#save");
 
 updateAutoSaveStatus(await isAutoSaveEnabled());
 onAutoSaveChanged(updateAutoSaveStatus);
+updateRecordMode(await shouldIncludeImages());
+onIncludeImagesChanged(updateRecordMode);
 
 function updateAutoSaveStatus(enabled) {
   const status = document.querySelector("#auto-save-status");
   status.textContent = enabled ? "オン" : "オフ";
   status.classList.toggle("enabled", enabled);
+}
+
+function updateRecordMode(includeImages) {
+  document.querySelector("#record-mode").textContent = includeImages
+    ? "メタデータ＋画像"
+    : "メタデータのみ";
 }
 
 save.addEventListener("click", async () => {
@@ -26,10 +39,12 @@ save.addEventListener("click", async () => {
     }
     const extracted = await getCurrentWork(tab.id);
     if (!extracted?.ok) throw new Error(extracted?.error || "作品情報を取得できませんでした");
-    status.textContent = `${extracted.work.title} を保存しています…`;
+    status.textContent = `${extracted.work.title} を記録しています…`;
     const result = await chrome.runtime.sendMessage({ type: "ARCHIVE_WORK", work: extracted.work });
-    if (!result?.ok) throw new Error(result?.error || "保存に失敗しました");
-    status.textContent = `${result.imageCount}枚・${formatBytes(result.byteSize)}を保存しました。`;
+    if (!result?.ok) throw new Error(result?.error || "記録に失敗しました");
+    status.textContent = result.imageCount > 0
+      ? `${result.imageCount}枚・${formatBytes(result.byteSize)}を記録しました。`
+      : "メタデータを記録しました。";
   } catch (error) {
     status.textContent = error.message;
   } finally {

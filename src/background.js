@@ -1,6 +1,6 @@
 import { getImages, getWork, saveArchive, updateWorkMetadata } from "./db.js";
 import { getArchiveFolder, getArchiveFolderSelectionId, saveArchiveToFolder } from "./folder.js";
-import { hasUsageConsent, isAutoSaveEnabled } from "./settings.js";
+import { hasUsageConsent, isAutoSaveEnabled, shouldIncludeImages } from "./settings.js";
 
 chrome.runtime.onInstalled.addListener((details) => {
   ensureArtworkTabsConnected();
@@ -65,23 +65,25 @@ async function archiveIfBookmarked(work, bookmarkAction = false) {
 async function archiveWork(work, suppliedDetails) {
   if (!work?.id) throw new Error("作品IDを取得できませんでした");
   if (!await hasUsageConsent()) {
-    throw new Error("保存一覧で利用上の注意を確認し、同意してください");
+    throw new Error("記録一覧で利用上の注意を確認し、同意してください");
   }
 
   const details = suppliedDetails || await getArtworkDetails(work.id);
   work = { ...work, ...metadataFromDetails(details, work) };
 
-  const imageUrls = await getArtworkImageUrls(work.id);
-
   const images = [];
-  for (const url of imageUrls) {
-    const response = await fetch(url, { credentials: "include" });
-    if (!response.ok) throw new Error(`画像取得に失敗しました (${response.status})`);
-    const blob = await response.blob();
-    images.push({ blob, mimeType: blob.type || "application/octet-stream" });
+  const includeImages = await shouldIncludeImages();
+  if (includeImages) {
+    const imageUrls = await getArtworkImageUrls(work.id);
+    for (const url of imageUrls) {
+      const response = await fetch(url, { credentials: "include" });
+      if (!response.ok) throw new Error(`画像取得に失敗しました (${response.status})`);
+      const blob = await response.blob();
+      images.push({ blob, mimeType: blob.type || "application/octet-stream" });
+    }
   }
 
-  const storedWork = { ...work };
+  const storedWork = { ...work, includesImages: includeImages };
   delete storedWork.imageUrls;
   let folder;
   try {
@@ -89,17 +91,24 @@ async function archiveWork(work, suppliedDetails) {
   } catch (error) {
     folder = { saved: false, reason: error.message };
   }
-  if (!folder.saved) {
+  if (includeImages && !folder.saved) {
     throw new Error(folder.reason === "not-configured"
-      ? "先に保存一覧から保存先フォルダーを選択してください"
-      : `保存先フォルダーへ書き込めませんでした: ${folder.reason || "権限を確認してください"}`);
+      ? "先に記録一覧から記録先フォルダーを選択してください"
+      : `記録先フォルダーへ書き込めませんでした: ${folder.reason || "権限を確認してください"}`);
   }
   await saveArchive({
     ...storedWork,
-    folderSelectionId: folder.folderSelectionId,
-    folderName: folder.folderName,
-    folderDirectoryName: folder.folderDirectoryName,
-    imageFiles: folder.imageFiles
+    ...(folder.saved ? {
+      folderSelectionId: folder.folderSelectionId,
+      folderName: folder.folderName,
+      folderDirectoryName: folder.folderDirectoryName,
+      imageFiles: folder.imageFiles
+    } : {
+      folderSelectionId: null,
+      folderName: null,
+      folderDirectoryName: null,
+      imageFiles: []
+    })
   }, images, { storeImages: false });
   return {
     imageCount: images.length,
