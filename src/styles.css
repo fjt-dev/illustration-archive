@@ -97,6 +97,8 @@ input { min-width: 320px; padding: 11px; border: 1px solid var(--border-strong);
 .search-box:focus-within { color: #0096fa; }
 .toolbar { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
 .archive-auto-save { display: flex; align-items: center; gap: 7px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); font-size: 13px; font-weight: 600; cursor: pointer; }
+.folder-access { border: 1px solid rgb(0 150 250 / 38%); color: #0096fa; background: rgb(0 150 250 / 10%); font-size: 12px; font-weight: 600; }
+.folder-access:hover { background: rgb(0 150 250 / 16%); }
 .selection-actions { display: flex; align-items: center; gap: 6px; padding: 4px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
 .selection-actions[hidden] { display: none; }
 .selection-actions button { padding: 7px 10px; }

@@ -48,6 +48,17 @@ export async function getArchiveFolder() {
   return handle || null;
 }
 
+export async function getArchiveFolderPermission(handle, mode = "read") {
+  if (!handle) return "not-configured";
+  return handle.queryPermission({ mode });
+}
+
+export async function requestArchiveFolderPermission(handle, mode = "readwrite") {
+  if (!handle) return false;
+  if (await handle.queryPermission({ mode }) === "granted") return true;
+  return await handle.requestPermission({ mode }) === "granted";
+}
+
 export async function getArchiveFolderSelectionId() {
   const { archiveFolderSelectionId } = await chrome.storage.local.get("archiveFolderSelectionId");
   return archiveFolderSelectionId || null;

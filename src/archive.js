@@ -1,5 +1,12 @@
 import { deleteImages, deleteWork, getImages, listWorks, updateWorkMetadata } from "./db.js";
-import { chooseArchiveFolder, getArchiveFolder, readArchiveImagesFromFolder, saveArchiveToFolder } from "./folder.js";
+import {
+  chooseArchiveFolder,
+  getArchiveFolder,
+  getArchiveFolderPermission,
+  readArchiveImagesFromFolder,
+  requestArchiveFolderPermission,
+  saveArchiveToFolder
+} from "./folder.js";
 import { initTheme, toggleTheme } from "./theme.js";
 import { formatBytes } from "./utils.js";
 import { createArchiveViewer } from "./archive-viewer.js";
@@ -25,13 +32,16 @@ const usageConsent = document.querySelector("#usage-consent");
 const shortcutsDialog = document.querySelector("#shortcuts-dialog");
 const archiveAutoSave = document.querySelector("#archive-auto-save");
 const archiveAutoSaveConsent = document.querySelector("#archive-auto-save-consent");
+const restoreFolderAccess = document.querySelector("#restore-folder-access");
 const archiveViewer = createArchiveViewer(viewer, document.querySelector("#viewer-content"));
 let works = await listWorks();
 let visibleWorks = works;
 const selectedIds = new Set();
 await repairMissingCreators();
 render(works);
-showFolderName(await getArchiveFolder());
+const initialFolder = await getArchiveFolder();
+showFolderName(initialFolder);
+await updateFolderAccess(initialFolder);
 archiveAutoSave.checked = await isAutoSaveEnabled();
 onAutoSaveChanged((enabled) => { archiveAutoSave.checked = enabled; });
 
@@ -127,6 +137,25 @@ document.querySelector("#clear-selection").addEventListener("click", () => {
   selectedIds.clear();
   render(visibleWorks);
 });
+restoreFolderAccess.addEventListener("click", async () => {
+  const folder = await getArchiveFolder();
+  if (!folder) {
+    restoreFolderAccess.hidden = true;
+    showFolderName(null);
+    return;
+  }
+
+  restoreFolderAccess.disabled = true;
+  try {
+    const granted = await requestArchiveFolderPermission(folder);
+    restoreFolderAccess.hidden = granted;
+    if (granted) render(visibleWorks);
+  } catch (error) {
+    if (error.name !== "AbortError") alert(error.message);
+  } finally {
+    restoreFolderAccess.disabled = false;
+  }
+});
 document.querySelector("#delete-selected").addEventListener("click", async () => {
   const targets = works.filter((work) => selectedIds.has(work.id));
   if (!targets.length) return;
@@ -148,6 +177,7 @@ document.querySelector("#choose-folder").addEventListener("click", async () => {
     const previousFolder = await getArchiveFolder();
     const handle = await chooseArchiveFolder();
     showFolderName(handle);
+    restoreFolderAccess.hidden = true;
     button.disabled = true;
     let failures = 0;
     for (let index = 0; index < works.length; index += 1) {
@@ -269,6 +299,11 @@ function showFolderName(handle) {
   document.querySelector("#folder-name").textContent = handle
     ? `保存先: ${handle.name}`
     : "保存先: 未選択";
+}
+
+async function updateFolderAccess(handle) {
+  restoreFolderAccess.hidden = !handle
+    || await getArchiveFolderPermission(handle, "readwrite") === "granted";
 }
 
 function updateSelectionControls() {
