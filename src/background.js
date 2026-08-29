@@ -2,6 +2,8 @@ import { getImages, getWork, saveArchive, updateWorkMetadata } from "./db.js";
 import { getArchiveFolder, getArchiveFolderSelectionId, saveArchiveToFolder } from "./folder.js";
 import { hasUsageConsent, isAutoSaveEnabled, shouldIncludeImages } from "./settings.js";
 
+const CONTENT_SCRIPT_VERSION = 3;
+
 chrome.runtime.onInstalled.addListener((details) => {
   ensureArtworkTabsConnected();
   if (details.reason === "install") chrome.runtime.openOptionsPage();
@@ -14,7 +16,8 @@ async function ensureArtworkTabsConnected() {
     .filter((tab) => tab.id)
     .map(async (tab) => {
       try {
-        await chrome.tabs.sendMessage(tab.id, { type: "PING" });
+        const response = await chrome.tabs.sendMessage(tab.id, { type: "PING" });
+        if (response?.version !== CONTENT_SCRIPT_VERSION) throw new Error("Outdated content script");
       } catch {
         await chrome.scripting.executeScript({
           target: { tabId: tab.id },
@@ -52,8 +55,12 @@ async function archiveIfBookmarked(work, bookmarkAction = false) {
   const existingWork = await getWork(work.id);
   if (existingWork) return syncExistingWorkToFolder(existingWork);
 
+  if (bookmarkAction) {
+    return archiveWork(work, undefined, { usePageMetadata: true });
+  }
+
   const details = await getArtworkDetails(work.id);
-  if (!bookmarkAction && !details.bookmarkData) return { skipped: true, reason: "not-bookmarked" };
+  if (!details.bookmarkData) return { skipped: true, reason: "not-bookmarked" };
 
   const merged = {
     ...work,
@@ -62,19 +69,23 @@ async function archiveIfBookmarked(work, bookmarkAction = false) {
   return archiveWork(merged, details);
 }
 
-async function archiveWork(work, suppliedDetails) {
+async function archiveWork(work, suppliedDetails, { usePageMetadata = false } = {}) {
   if (!work?.id) throw new Error("作品IDを取得できませんでした");
   if (!await hasUsageConsent()) {
     throw new Error("記録一覧で利用上の注意を確認し、同意してください");
   }
 
-  const details = suppliedDetails || await getArtworkDetails(work.id);
-  work = { ...work, ...metadataFromDetails(details, work) };
-
   const images = [];
   const includeImages = await shouldIncludeImages();
-  const imageReferences = await getImageReferences(work.id, { required: includeImages });
-  if (includeImages) images.push(...await downloadImages(imageReferences.originalImageUrls));
+  let imageReferences;
+  if (usePageMetadata && !includeImages) {
+    imageReferences = embeddedImageReferences(work);
+  } else {
+    const details = suppliedDetails || await getArtworkDetails(work.id);
+    work = { ...work, ...metadataFromDetails(details, work) };
+    imageReferences = await getImageReferences(work.id, { required: includeImages });
+    if (includeImages) images.push(...await downloadImages(imageReferences.originalImageUrls));
+  }
 
   const storedWork = {
     ...work,
@@ -113,6 +124,16 @@ async function archiveWork(work, suppliedDetails) {
     folderSaved: folder.saved,
     folderReason: folder.reason
   };
+}
+
+function embeddedImageReferences(work) {
+  const originalImageUrls = Array.isArray(work.originalImageUrls)
+    ? work.originalImageUrls.filter((url) => typeof url === "string" && url.startsWith("https://i.pximg.net/"))
+    : [];
+  const originalImageFileNames = Array.isArray(work.originalImageFileNames)
+    ? work.originalImageFileNames.filter(Boolean)
+    : originalImageUrls.map(imageFileName).filter(Boolean);
+  return { originalImageUrls, originalImageFileNames };
 }
 
 async function syncExistingWorkToFolder(work) {

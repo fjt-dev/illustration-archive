@@ -1,6 +1,7 @@
 (() => {
-if (globalThis.__ILLUSTRATION_ARCHIVE_LOADED__) return;
-globalThis.__ILLUSTRATION_ARCHIVE_LOADED__ = true;
+const INSTANCE_KEY = "__ILLUSTRATION_ARCHIVE_INSTANCE__";
+const CONTENT_SCRIPT_VERSION = 3;
+try { globalThis[INSTANCE_KEY]?.dispose?.(); } catch {}
 
 function parsePreload() {
   const node = document.querySelector("#meta-preload-data");
@@ -14,6 +15,10 @@ function currentWork() {
 
   const preload = parsePreload();
   const illust = preload?.illust?.[id];
+  const embeddedImageUrls = Object.values(illust?.urls || {})
+    .filter((url) => typeof url === "string" && url.startsWith("https://i.pximg.net/"));
+  const originalImageUrls = [illust?.urls?.original]
+    .filter((url) => typeof url === "string" && url.startsWith("https://i.pximg.net/"));
   return {
     id,
     sourceUrl: location.href,
@@ -23,25 +28,37 @@ function currentWork() {
     description: illust?.description || "",
     tags: illust?.tags?.tags?.map((tag) => tag.tag) || [],
     postedAt: illust?.createDate || null,
-    pageCount: Number(illust?.pageCount || 0)
+    pageCount: Number(illust?.pageCount || 0),
+    originalImageUrls,
+    originalImageFileNames: [...new Set(embeddedImageUrls.map(imageFileName).filter(Boolean))]
   };
 }
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+function imageFileName(url) {
+  try { return decodeURIComponent(new URL(url).pathname.split("/").pop() || ""); }
+  catch { return ""; }
+}
+
+function handleRuntimeMessage(message, _sender, sendResponse) {
   if (message.type === "PING") {
-    sendResponse({ ok: true });
+    sendResponse({ ok: true, version: CONTENT_SCRIPT_VERSION });
     return false;
   }
   if (message.type !== "GET_CURRENT_WORK") return false;
   try { sendResponse({ ok: true, work: currentWork() }); }
   catch (error) { sendResponse({ ok: false, error: error.message }); }
   return false;
-});
+}
+
+chrome.runtime.onMessage.addListener(handleRuntimeMessage);
 
 let autoRecordTimer;
+let bookmarkObserver;
 let disposed = false;
+const instance = { dispose };
+globalThis[INSTANCE_KEY] = instance;
 
-function scheduleAutoRecord(delay = 700) {
+function scheduleAutoRecord(delay = 250) {
   if (disposed) return;
   clearTimeout(autoRecordTimer);
   autoRecordTimer = setTimeout(async () => {
@@ -73,9 +90,12 @@ function isInvalidatedContext(error) {
 }
 
 function dispose() {
+  if (disposed) return;
   disposed = true;
   clearTimeout(autoRecordTimer);
-  document.removeEventListener("click", handlePageClick, true);
+  bookmarkObserver?.disconnect();
+  try { chrome.runtime.onMessage.removeListener(handleRuntimeMessage); } catch {}
+  if (globalThis[INSTANCE_KEY] === instance) delete globalThis[INSTANCE_KEY];
 }
 
 function showSavedNotice() {
@@ -98,23 +118,23 @@ function showNotice(message, isError = false) {
   setTimeout(() => notice.remove(), 2500);
 }
 
-function handlePageClick(event) {
-  if (!isBookmarkAction(event)) return;
-  scheduleAutoRecord(850);
+function isBookmarkAddRequest(entry) {
+  try {
+    const url = new URL(entry.name);
+    const responseStatus = Number(entry.responseStatus || 0);
+    return (responseStatus === 0 || (responseStatus >= 200 && responseStatus < 300))
+      && url.origin === "https://www.pixiv.net"
+      && /^\/ajax\/illusts?\/bookmarks\/add\/?$/.test(url.pathname);
+  } catch {
+    return false;
+  }
 }
 
-function isBookmarkAction(event) {
-  if (!(event.target instanceof Element)) return false;
-  const control = event.target.closest("button, [role='button']");
-  if (!control) return false;
-  const label = [
-    control.getAttribute("aria-label"),
-    control.getAttribute("title"),
-    control.textContent
-  ].filter(Boolean).join(" ");
-  return !/解除|削除|remove|unbookmark/i.test(label)
-    && /ブックマーク|いいね|bookmark|like/i.test(label);
+if (typeof PerformanceObserver === "function") {
+  bookmarkObserver = new PerformanceObserver((list) => {
+    if (disposed) return;
+    if (list.getEntries().some(isBookmarkAddRequest)) scheduleAutoRecord();
+  });
+  bookmarkObserver.observe({ type: "resource", buffered: false });
 }
-
-document.addEventListener("click", handlePageClick, true);
 })();

@@ -1,7 +1,7 @@
 :root {
   color-scheme: dark;
   font-family: system-ui, sans-serif;
-  --bg: #111318;
+  --bg: #1C1C1E;
   --surface: #191e26;
   --surface-raised: #202630;
   --surface-muted: #272d37;
@@ -10,7 +10,7 @@
   --input: #171b22;
   --border: #303744;
   --border-strong: #465062;
-  --text: #eef1f5;
+  --text: #FFFFFF;
   --muted: #aeb7c5;
   --faint: #8993a2;
   --danger: #ff8e98;
