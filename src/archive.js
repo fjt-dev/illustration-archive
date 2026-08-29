@@ -1,0 +1,278 @@
+import { deleteImages, deleteWork, getImages, listWorks, updateWorkMetadata } from "./db.js";
+import { chooseArchiveFolder, getArchiveFolder, readArchiveImagesFromFolder, saveArchiveToFolder } from "./folder.js";
+import { initTheme, toggleTheme } from "./theme.js";
+import { formatBytes } from "./utils.js";
+import { createArchiveViewer } from "./archive-viewer.js";
+import {
+  completeOnboarding,
+  disableAutoSave,
+  enableAutoSave,
+  getFirstRunState,
+  isAutoSaveEnabled,
+  onAutoSaveChanged,
+  recordUsageConsent
+} from "./settings.js";
+
+const themeButton = document.querySelector("#theme-toggle");
+await initTheme(themeButton);
+themeButton.addEventListener("click", () => toggleTheme(themeButton));
+
+const grid = document.querySelector("#works");
+const summary = document.querySelector("#summary");
+const viewer = document.querySelector("#viewer");
+const onboarding = document.querySelector("#onboarding");
+const usageConsent = document.querySelector("#usage-consent");
+const shortcutsDialog = document.querySelector("#shortcuts-dialog");
+const archiveAutoSave = document.querySelector("#archive-auto-save");
+const archiveAutoSaveConsent = document.querySelector("#archive-auto-save-consent");
+const archiveViewer = createArchiveViewer(viewer, document.querySelector("#viewer-content"));
+let works = await listWorks();
+let visibleWorks = works;
+const selectedIds = new Set();
+await repairMissingCreators();
+render(works);
+showFolderName(await getArchiveFolder());
+archiveAutoSave.checked = await isAutoSaveEnabled();
+onAutoSaveChanged((enabled) => { archiveAutoSave.checked = enabled; });
+
+archiveAutoSave.addEventListener("change", async () => {
+  if (!archiveAutoSave.checked) {
+    await disableAutoSave();
+    return;
+  }
+  archiveAutoSave.checked = false;
+  archiveAutoSaveConsent.showModal();
+});
+
+document.querySelector("#archive-consent-cancel").addEventListener("click", () => {
+  archiveAutoSave.checked = false;
+  archiveAutoSaveConsent.close();
+});
+
+document.querySelector("#archive-consent-agree").addEventListener("click", async () => {
+  await enableAutoSave();
+  archiveAutoSave.checked = true;
+  archiveAutoSaveConsent.close();
+});
+
+const firstRunState = await getFirstRunState();
+if (!firstRunState.hasUsageConsent) {
+  usageConsent.showModal();
+} else if (!firstRunState.onboardingCompleted) {
+  onboarding.showModal();
+}
+
+document.querySelector("#search").addEventListener("input", (event) => {
+  const q = event.target.value.trim().toLowerCase();
+  visibleWorks = works.filter((work) => [work.title, work.creatorName, ...(work.tags || [])].join(" ").toLowerCase().includes(q));
+  render(visibleWorks);
+});
+document.querySelector("#close").addEventListener("click", () => viewer.close());
+document.querySelector("#open-shortcuts").addEventListener("click", () => shortcutsDialog.showModal());
+document.querySelector("#close-shortcuts").addEventListener("click", () => shortcutsDialog.close());
+document.querySelector("#open-guide").addEventListener("click", () => onboarding.showModal());
+document.querySelector("#onboarding-close").addEventListener("click", () => {
+  onboarding.close();
+  highlightChooseFolder();
+});
+onboarding.addEventListener("close", () => completeOnboarding());
+usageConsent.addEventListener("cancel", (event) => event.preventDefault());
+document.querySelector("#usage-consent-agree").addEventListener("click", async () => {
+  await recordUsageConsent();
+  usageConsent.close();
+  onboarding.showModal();
+});
+
+function highlightChooseFolder() {
+  const button = document.querySelector("#choose-folder");
+  button.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+  button.focus({ preventScroll: true });
+  button.classList.remove("guide-attention");
+  requestAnimationFrame(() => button.classList.add("guide-attention"));
+  setTimeout(() => button.classList.remove("guide-attention"), 3600);
+}
+document.addEventListener("click", (event) => {
+  document.querySelectorAll(".card-menu[open]").forEach((menu) => {
+    if (!menu.contains(event.target)) menu.removeAttribute("open");
+  });
+});
+document.addEventListener("keydown", (event) => {
+  const editing = event.target.matches("input, textarea, [contenteditable='true']");
+  if (event.key === "/" && !editing && !event.metaKey && !event.ctrlKey && !event.altKey) {
+    event.preventDefault();
+    document.querySelector("#search").focus();
+    return;
+  }
+  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "a" && !editing) {
+    event.preventDefault();
+    visibleWorks.forEach((work) => selectedIds.add(work.id));
+    render(visibleWorks);
+    return;
+  }
+  if (event.key === "Escape" && selectedIds.size > 0) {
+    selectedIds.clear();
+    render(visibleWorks);
+  }
+});
+document.querySelector("#select-visible").addEventListener("click", () => {
+  visibleWorks.forEach((work) => selectedIds.add(work.id));
+  render(visibleWorks);
+});
+document.querySelector("#clear-selection").addEventListener("click", () => {
+  selectedIds.clear();
+  render(visibleWorks);
+});
+document.querySelector("#delete-selected").addEventListener("click", async () => {
+  const targets = works.filter((work) => selectedIds.has(work.id));
+  if (!targets.length) return;
+  if (!confirm(`選択した${targets.length}作品を一覧から削除しますか？\n外部フォルダーの画像ファイルは削除されません。`)) return;
+
+  const button = document.querySelector("#delete-selected");
+  button.disabled = true;
+  button.textContent = "削除中…";
+  await Promise.all(targets.map((work) => deleteWork(work.id)));
+  works = works.filter((work) => !selectedIds.has(work.id));
+  visibleWorks = visibleWorks.filter((work) => !selectedIds.has(work.id));
+  selectedIds.clear();
+  button.textContent = "選択項目を削除";
+  render(visibleWorks);
+});
+document.querySelector("#choose-folder").addEventListener("click", async () => {
+  const button = document.querySelector("#choose-folder");
+  try {
+    const previousFolder = await getArchiveFolder();
+    const handle = await chooseArchiveFolder();
+    showFolderName(handle);
+    button.disabled = true;
+    let failures = 0;
+    for (let index = 0; index < works.length; index += 1) {
+      button.textContent = `既存作品をコピー中 ${index + 1}/${works.length}`;
+      try {
+        let images = await getImages(works[index].id);
+        if (!images.length) {
+          if (!previousFolder) {
+            failures += 1;
+            continue;
+          }
+          images = await readArchiveImagesFromFolder(previousFolder, works[index]);
+        }
+        const result = await saveArchiveToFolder(works[index], images);
+        if (!result.saved) {
+          failures += 1;
+          continue;
+        }
+        Object.assign(works[index], {
+          folderSelectionId: result.folderSelectionId,
+          folderName: result.folderName,
+          folderDirectoryName: result.folderDirectoryName,
+          imageFiles: result.imageFiles
+        });
+        await updateWorkMetadata(works[index].id, {
+          folderSelectionId: result.folderSelectionId,
+          folderName: result.folderName,
+          folderDirectoryName: result.folderDirectoryName,
+          imageFiles: result.imageFiles
+        });
+        await deleteImages(works[index].id);
+      } catch {
+        failures += 1;
+      }
+    }
+    if (failures) alert(`${failures}作品を新しい保存先へコピーできませんでした`);
+  } catch (error) {
+    if (error.name !== "AbortError") alert(error.message);
+  } finally {
+    button.disabled = false;
+    button.textContent = "保存先";
+  }
+});
+
+function render(items) {
+  summary.textContent = `${works.length}作品・${formatBytes(works.reduce((sum, work) => sum + (work.byteSize || 0), 0))}`;
+  grid.replaceChildren(...items.map(card));
+  if (!items.length) grid.textContent = "保存済み作品はありません。";
+  updateSelectionControls();
+}
+
+function card(work) {
+  const article = document.querySelector("#work-card-template").content.firstElementChild.cloneNode(true);
+  article.setAttribute("aria-label", `${work.title}を選択`);
+  const checkbox = article.querySelector(".select-work input");
+  checkbox.checked = selectedIds.has(work.id);
+  article.classList.toggle("selected", checkbox.checked);
+  checkbox.addEventListener("change", () => {
+    checkbox.checked ? selectedIds.add(work.id) : selectedIds.delete(work.id);
+    article.classList.toggle("selected", checkbox.checked);
+    updateSelectionControls();
+  });
+  const toggleSelection = () => {
+    checkbox.checked = !checkbox.checked;
+    checkbox.dispatchEvent(new Event("change"));
+  };
+  article.addEventListener("click", (event) => {
+    if (event.target.closest(".thumb, .select-work, .card-menu, a, button, input")) return;
+    toggleSelection();
+  });
+  article.addEventListener("keydown", (event) => {
+    if (event.target.closest(".card-menu")) return;
+    if (event.key === "Enter") {
+      event.preventDefault();
+      archiveViewer.showImages(work);
+      return;
+    }
+    if (event.key === " ") {
+      event.preventDefault();
+      toggleSelection();
+    }
+  });
+  article.querySelector("h2").textContent = work.title;
+  article.querySelector(".creator").textContent = work.creatorName || "作者不明";
+  article.querySelector(".meta").textContent = `${work.imageCount}枚・${formatBytes(work.byteSize)}`;
+  article.querySelector("[data-source]").href = work.sourceUrl;
+  const query = [work.id, work.title, work.creatorName, "pixiv"].filter(Boolean).join(" ");
+  article.querySelector("[data-google]").href = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+  article.querySelector("[data-view]").addEventListener("click", () => archiveViewer.showImages(work));
+  article.querySelector("[data-metadata]").addEventListener("click", () => archiveViewer.showMetadata(work));
+  article.querySelector(".thumb").addEventListener("click", () => archiveViewer.showImages(work));
+  article.querySelector("[data-delete]").addEventListener("click", async () => {
+    if (!confirm(`「${work.title}」を一覧から削除しますか？\n外部フォルダーの画像ファイルは削除されません。`)) return;
+    await deleteWork(work.id);
+    works = works.filter((item) => item.id !== work.id);
+    visibleWorks = visibleWorks.filter((item) => item.id !== work.id);
+    selectedIds.delete(work.id);
+    render(visibleWorks);
+  });
+  article.querySelectorAll(".card-menu-items a, .card-menu-items button").forEach((item) => {
+    item.addEventListener("click", () => article.querySelector(".card-menu").removeAttribute("open"));
+  });
+  archiveViewer.loadThumbnail(article.querySelector(".thumb"), work);
+  return article;
+}
+
+async function repairMissingCreators() {
+  const missing = works.filter((work) => !work.creatorName);
+  await Promise.allSettled(missing.map(async (work) => {
+    const result = await chrome.runtime.sendMessage({
+      type: "REFRESH_WORK_METADATA",
+      workId: work.id
+    });
+    if (result?.ok) Object.assign(work, result.metadata);
+  }));
+}
+
+function showFolderName(handle) {
+  document.querySelector("#folder-name").textContent = handle
+    ? `保存先: ${handle.name}`
+    : "保存先: 未選択";
+}
+
+function updateSelectionControls() {
+  const count = selectedIds.size;
+  document.querySelector("#selection-actions").hidden = count === 0;
+  const deleteButton = document.querySelector("#delete-selected");
+  deleteButton.disabled = count === 0;
+  deleteButton.textContent = count ? `${count}件を削除` : "選択項目を削除";
+
+  document.querySelector("#select-visible").disabled = visibleWorks.length === 0
+    || visibleWorks.every((work) => selectedIds.has(work.id));
+}

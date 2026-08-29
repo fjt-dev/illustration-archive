@@ -1,0 +1,85 @@
+import { getImages } from "./db.js";
+import { readArchiveImages } from "./folder.js";
+import { formatBytes, formatDate, htmlToPlainText } from "./utils.js";
+
+export function createArchiveViewer(dialog, content) {
+  async function loadImages(work) {
+    const browserImages = await getImages(work.id);
+    return browserImages.length ? browserImages : readArchiveImages(work);
+  }
+
+  async function loadThumbnail(node, work) {
+    let image;
+    try {
+      [image] = await loadImages(work);
+    } catch {
+      node.textContent = "画像を読み込めません";
+      return;
+    }
+    if (!image) return;
+
+    const url = URL.createObjectURL(image.blob);
+    const thumbnail = new Image();
+    thumbnail.src = url;
+    thumbnail.onload = () => URL.revokeObjectURL(url);
+    thumbnail.onerror = () => URL.revokeObjectURL(url);
+    node.replaceChildren(thumbnail);
+  }
+
+  async function showImages(work) {
+    content.textContent = "読み込み中…";
+    dialog.showModal();
+
+    let images;
+    try {
+      images = await loadImages(work);
+    } catch (error) {
+      content.textContent = error.message;
+      return;
+    }
+
+    const title = document.createElement("h2");
+    title.textContent = `${work.title} — ${work.creatorName || "作者不明"}`;
+    const imageNodes = images.map((image) => {
+      const node = new Image();
+      const url = URL.createObjectURL(image.blob);
+      node.src = url;
+      node.onload = () => URL.revokeObjectURL(url);
+      node.onerror = () => URL.revokeObjectURL(url);
+      return node;
+    });
+    content.replaceChildren(title, ...imageNodes);
+  }
+
+  function showMetadata(work) {
+    const title = document.createElement("h2");
+    title.textContent = "保存メタデータ";
+    const fields = [
+      ["作品ID", work.id],
+      ["タイトル", work.title],
+      ["作者", work.creatorName || "不明"],
+      ["作者ID", work.creatorId || "不明"],
+      ["タグ", work.tags?.length ? work.tags.join(" / ") : "なし"],
+      ["説明", htmlToPlainText(work.description) || "なし"],
+      ["投稿日", formatDate(work.postedAt)],
+      ["保存日時", formatDate(work.archivedAt)],
+      ["ページ数", `${work.pageCount || work.imageCount || 0}ページ`],
+      ["保存容量", formatBytes(work.byteSize)],
+      ["元URL", work.sourceUrl || "なし"]
+    ];
+
+    const list = document.createElement("dl");
+    list.className = "metadata-list";
+    fields.forEach(([label, value]) => {
+      const term = document.createElement("dt");
+      const description = document.createElement("dd");
+      term.textContent = label;
+      description.textContent = String(value ?? "");
+      list.append(term, description);
+    });
+    content.replaceChildren(title, list);
+    dialog.showModal();
+  }
+
+  return { loadThumbnail, showImages, showMetadata };
+}

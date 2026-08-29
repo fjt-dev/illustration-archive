@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ja">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="styles.css"><title>保存済み作品</title></head>
+<body class="archive-page">
+  <header>
+    <div><h1>保存済み作品</h1><p id="summary"></p></div>
+    <div class="toolbar">
+      <div id="selection-actions" class="selection-actions" hidden>
+        <button id="select-visible">すべて選択</button>
+        <button id="clear-selection">すべて選択解除</button>
+        <button id="delete-selected" class="danger" disabled>選択項目を削除</button>
+      </div>
+      <button id="open-guide">使い方</button>
+      <button id="choose-folder">保存先</button>
+      <span id="folder-name">保存先: 未選択</span>
+      <label class="archive-auto-save"><span>自動保存</span><input id="archive-auto-save" type="checkbox" role="switch"></label>
+      <label class="search-box">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg>
+        <input id="search" type="search" placeholder="タイトル・作者・タグで検索">
+        <kbd>/</kbd>
+      </label>
+      <button id="theme-toggle" title="テーマを切り替える"></button>
+    </div>
+  </header>
+  <main id="works" class="grid"></main>
+  <nav class="page-links" aria-label="関連リンク">
+    <button id="open-shortcuts" class="page-link">ショートカット一覧</button>
+    <a class="page-link" href="https://github.com/fjt-dev/illustration-archive" target="_blank" rel="noreferrer">GitHub Repository</a>
+  </nav>
+  <dialog id="viewer"><button id="close" aria-label="閉じる" title="閉じる"></button><div id="viewer-content"></div></dialog>
+  <dialog id="shortcuts-dialog" class="shortcuts-dialog">
+    <h2>キーボードショートカット</h2>
+    <dl>
+      <div><dt><kbd>/</kbd></dt><dd>検索ボックスへ移動</dd></div>
+      <div><dt><kbd>⌘ / Ctrl</kbd> + <kbd>A</kbd></dt><dd>表示中の作品をすべて選択</dd></div>
+      <div><dt><kbd>Esc</kbd></dt><dd>選択をすべて解除</dd></div>
+      <div><dt><kbd>Enter</kbd></dt><dd>フォーカス中の画像を拡大表示</dd></div>
+    </dl>
+    <button id="close-shortcuts">閉じる</button>
+  </dialog>
+  <dialog id="usage-consent" class="usage-consent-dialog">
+    <div class="onboarding-badge">初回のみ</div>
+    <h2>利用上の注意</h2>
+    <p>Illustration Archiveを利用する前に、以下を確認してください。</p>
+    <ul>
+      <li>作品の著作権は作者などの権利者に帰属します。</li>
+      <li>保存した画像は個人的な閲覧の範囲で扱い、無断転載・共有・再配布をしないでください。</li>
+      <li>適用される法令と、閲覧元サービスの利用規約を確認して利用してください。</li>
+      <li>保存先の空き容量とファイル管理は利用者自身で確認してください。</li>
+    </ul>
+    <p class="consent-note">本表示は法的助言ではありません。利用者自身の判断と責任で利用してください。</p>
+    <button id="usage-consent-agree" class="primary">同意して続ける</button>
+  </dialog>
+  <dialog id="archive-auto-save-consent" class="consent-dialog">
+    <h2>自動保存を有効にしますか？</h2>
+    <p>自動保存は非公式の機能です。保存先の空き容量、著作権、閲覧元サービスの利用規約を確認し、ご自身の責任で利用してください。保存した画像を無断で共有・再配布しないでください。</p>
+    <div class="consent-actions">
+      <button id="archive-consent-cancel">キャンセル</button>
+      <button id="archive-consent-agree" class="primary">同意して有効化</button>
+    </div>
+  </dialog>
+  <dialog id="onboarding" class="onboarding-dialog">
+    <div class="onboarding-badge">はじめに</div>
+    <h2>Illustration Archiveの使い方</h2>
+    <ol class="onboarding-steps">
+      <li><span>1</span><div><strong>保存先を選択</strong><p>画像を保存するフォルダーを指定します。</p></div></li>
+      <li><span>2</span><div><strong>必要なら自動保存をオン</strong><p>拡張機能のポップアップで自動保存をオンにし、注意事項を確認して同意します。初期設定はオフです。</p></div></li>
+      <li><span>3</span><div><strong>作品をいいね</strong><p>pixivの作品ページでいいね（ブックマーク）すると、オンの場合は選択フォルダーへ自動保存されます。</p></div></li>
+      <li><span>4</span><div><strong>保存一覧で確認</strong><p>画像の閲覧、検索、メタデータ確認、Google検索ができます。手動保存はポップアップからいつでも利用できます。</p></div></li>
+    </ol>
+    <p class="onboarding-tip"><strong>ヒント</strong> この保存一覧ページをブラウザでブックマークしておくと、すぐに開けて便利です。</p>
+    <p class="onboarding-reopen">この案内は、画面上部の「使い方」からいつでも再表示できます。</p>
+    <button id="onboarding-close" class="primary">はじめる</button>
+  </dialog>
+  <template id="work-card-template">
+    <article tabindex="0" role="group">
+      <label class="select-work"><input type="checkbox" aria-label="作品を選択"><span aria-hidden="true"></span></label>
+      <div class="thumb">画像を表示</div>
+      <div class="card-info">
+        <div class="card-heading">
+          <h2></h2>
+          <details class="card-menu">
+            <summary aria-label="作品メニュー" title="メニュー"></summary>
+            <div class="card-menu-items">
+              <button data-view>画像を開く</button>
+              <button data-metadata>メタデータを表示</button>
+              <a data-source target="_blank" rel="noreferrer">元ページを開く</a>
+              <a data-google target="_blank" rel="noreferrer">Googleで検索</a>
+              <button data-delete class="menu-delete">一覧から削除</button>
+            </div>
+          </details>
+        </div>
+        <p class="creator"></p>
+        <p class="meta"></p>
+      </div>
+    </article>
+  </template>
+  <script type="module" src="archive.js"></script>
+</body>
+</html>
