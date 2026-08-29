@@ -98,6 +98,11 @@ document.addEventListener("click", (event) => {
 });
 document.addEventListener("keydown", (event) => {
   const editing = event.target.matches("input, textarea, [contenteditable='true']");
+  if (event.key === "Escape" && event.target.matches("#search")) {
+    event.preventDefault();
+    event.target.blur();
+    return;
+  }
   if (event.key === "/" && !editing && !event.metaKey && !event.ctrlKey && !event.altKey) {
     event.preventDefault();
     document.querySelector("#search").focus();
