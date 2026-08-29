@@ -17,6 +17,9 @@
   --danger-bg: #592d33;
   --overlay: rgb(3 6 10 / 78%);
   --shadow: rgb(0 0 0 / 45%);
+  --selection-control-bg: rgb(17 19 24 / 72%);
+  --selection-control-border: rgb(255 255 255 / 32%);
+  --selection-control-shadow: rgb(0 0 0 / 25%);
 }
 :root[data-theme="light"] {
   color-scheme: light;
@@ -36,6 +39,9 @@
   --danger-bg: #fde8eb;
   --overlay: rgb(26 34 45 / 45%);
   --shadow: rgb(31 41 55 / 18%);
+  --selection-control-bg: rgb(255 255 255 / 88%);
+  --selection-control-border: rgb(77 90 109 / 28%);
+  --selection-control-shadow: rgb(31 41 55 / 16%);
 }
 @media (prefers-color-scheme: light) {
   :root:not([data-theme]) {
@@ -44,6 +50,7 @@
     --control: #e8edf3; --control-hover: #dce3eb; --input: #ffffff; --border: #d8dee7;
     --border-strong: #c4ccd8; --text: #1c2430; --muted: #667286; --faint: #7c8798;
     --danger: #c33d4c; --danger-bg: #fde8eb; --overlay: rgb(26 34 45 / 45%); --shadow: rgb(31 41 55 / 18%);
+    --selection-control-bg: rgb(255 255 255 / 88%); --selection-control-border: rgb(77 90 109 / 28%); --selection-control-shadow: rgb(31 41 55 / 16%);
   }
 }
 body { margin: 0; background: var(--bg); color: var(--text); }
@@ -116,7 +123,7 @@ article:focus { outline: none; }
 article:focus-visible { outline: 2px solid #69bdff; outline-offset: 3px; }
 .card-info { position: relative; min-height: 112px; padding-top: 12px; }
 .card-heading, .card-info > .creator, .card-info > .meta { cursor: pointer; }
-.select-work { position: absolute; z-index: 1; top: 10px; left: 10px; display: block; width: 26px; height: 26px; border: 1px solid rgb(255 255 255 / 32%); border-radius: 7px; background: rgb(17 19 24 / 72%); box-shadow: 0 2px 8px rgb(0 0 0 / 25%); backdrop-filter: blur(6px); cursor: pointer; }
+.select-work { position: absolute; z-index: 1; top: 10px; left: 10px; display: block; width: 26px; height: 26px; border: 1px solid var(--selection-control-border); border-radius: 7px; background: var(--selection-control-bg); box-shadow: 0 2px 8px var(--selection-control-shadow); backdrop-filter: blur(6px); cursor: pointer; }
 .select-work input { position: absolute; width: 1px; height: 1px; min-width: 0; margin: 0; opacity: 0; pointer-events: none; }
 .select-work span { position: absolute; inset: 3px; display: grid; place-items: center; border-radius: 4px; transition: background 120ms ease; }
 .select-work input:checked + span { background: #0096fa; }
