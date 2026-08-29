@@ -150,10 +150,12 @@ article h2 { min-width: 0; margin-top: 0; margin-bottom: 0; overflow: hidden; fo
 .card-menu-items button:hover, .card-menu-items a:hover { background: var(--control); }
 .card-menu-items .menu-delete { color: var(--danger); }
 dialog {
-  position: relative;
+  position: fixed;
+  inset: 0;
   box-sizing: border-box;
   width: min(1000px, 90vw);
   max-height: 90vh;
+  margin: auto;
   padding: 48px 24px 24px;
   overflow: hidden;
   background: var(--bg);
