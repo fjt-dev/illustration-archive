@@ -134,7 +134,28 @@ async function writeFile(directory, name, blob) {
 }
 
 function safeName(value) {
-  return value.replace(/[\\/:*?"<>|]/g, "_").replace(/\s+/g, " ").trim().slice(0, 120);
+  const fallback = "untitled";
+  const normalized = String(value)
+    .normalize("NFC")
+    .replace(/[\u0000-\u001f\u007f\\/:*?"<>|]/g, "_")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/[. ]+$/g, "");
+  const shortened = truncateUtf8(normalized || fallback, 240).replace(/[. ]+$/g, "");
+  return shortened || fallback;
+}
+
+function truncateUtf8(value, maxBytes) {
+  const encoder = new TextEncoder();
+  let result = "";
+  let byteLength = 0;
+  for (const character of value) {
+    const characterBytes = encoder.encode(character).length;
+    if (byteLength + characterBytes > maxBytes) break;
+    result += character;
+    byteLength += characterBytes;
+  }
+  return result;
 }
 
 function extensionFor(mimeType) {

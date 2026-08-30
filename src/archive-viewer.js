@@ -125,8 +125,7 @@ export function createArchiveViewer(dialog, content) {
   }
 
   function searchQueryFor(work) {
-    const likelyPixivWork = sourceUrlFor(work).includes("pixiv.net") || /^\d+$/.test(String(work.id));
-    return [work.id, work.title, work.creatorName, ...(work.originalImageFileNames || []), likelyPixivWork ? "pixiv" : ""]
+    return [work.id, work.title, work.creatorName, ...(work.originalImageFileNames || [])]
       .filter(Boolean)
       .join(" ");
   }

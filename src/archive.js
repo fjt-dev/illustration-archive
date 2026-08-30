@@ -376,10 +376,7 @@ function card(work) {
   const sourceLink = article.querySelector("[data-source]");
   if (work.sourceUrl) sourceLink.href = work.sourceUrl;
   else sourceLink.hidden = true;
-  const likelyPixivWork = work.sourceUrl?.includes("pixiv.net") || /^\d+$/.test(String(work.id));
-  const query = [work.id, work.title, work.creatorName, likelyPixivWork ? "pixiv" : ""]
-    .filter(Boolean)
-    .join(" ");
+  const query = [work.id, work.title, work.creatorName].filter(Boolean).join(" ");
   article.querySelector("[data-google]").href = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
   const viewButton = article.querySelector("[data-view]");
   viewButton.textContent = work.imageCount === 0 ? "元画像を探す" : "画像を開く";

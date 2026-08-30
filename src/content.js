@@ -71,8 +71,9 @@ globalThis[INSTANCE_KEY] = instance;
 
 const recordButton = createRecordButton();
 let currentArtworkPath = location.pathname;
-const pageObserver = new MutationObserver(updateRecordButton);
-pageObserver.observe(document.documentElement, { childList: true, subtree: true });
+const navigationHandler = () => queueMicrotask(updateRecordButton);
+globalThis.navigation?.addEventListener("currententrychange", navigationHandler);
+globalThis.addEventListener("popstate", navigationHandler);
 updateRecordButton();
 
 function createRecordButton() {
@@ -125,7 +126,8 @@ function isInvalidatedContext(error) {
 function dispose() {
   if (disposed) return;
   disposed = true;
-  pageObserver.disconnect();
+  globalThis.navigation?.removeEventListener("currententrychange", navigationHandler);
+  globalThis.removeEventListener("popstate", navigationHandler);
   recordButton.remove();
   try { chrome.runtime.onMessage.removeListener(handleRuntimeMessage); } catch {}
   if (globalThis[INSTANCE_KEY] === instance) delete globalThis[INSTANCE_KEY];
