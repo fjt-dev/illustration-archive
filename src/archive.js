@@ -123,6 +123,14 @@ searchInput.addEventListener("input", (event) => {
   applyFilters();
 });
 document.querySelector("#close").addEventListener("click", () => viewer.close());
+viewer.addEventListener("click", (event) => {
+  const bounds = viewer.getBoundingClientRect();
+  const outsideViewer = event.clientX < bounds.left
+    || event.clientX > bounds.right
+    || event.clientY < bounds.top
+    || event.clientY > bounds.bottom;
+  if (outsideViewer) viewer.close();
+});
 document.querySelector("#open-shortcuts").addEventListener("click", () => shortcutsDialog.showModal());
 document.querySelector("#close-shortcuts").addEventListener("click", () => shortcutsDialog.close());
 document.querySelector("#open-guide").addEventListener("click", () => onboarding.showModal());

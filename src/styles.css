@@ -84,6 +84,7 @@ button:disabled:hover { transform: none; }
 .consent-dialog h2 { margin: 0 0 10px; font-size: 17px; }
 .consent-dialog p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
 .consent-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+.consent-actions button { flex: 1 1 0; min-width: 0; height: 40px; padding: 0 12px; line-height: 20px; white-space: nowrap; }
 .popup .consent-actions button { width: auto; margin: 0; }
 .archive-page { padding: 28px; }
 header { display: flex; align-items: center; justify-content: space-between; gap: 20px; max-width: 1200px; margin: auto; }
@@ -92,12 +93,13 @@ header p { color: var(--muted); margin-top: 0; }
 input { min-width: 320px; padding: 11px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--input); color: var(--text); }
 .search-box { position: relative; display: block; color: var(--muted); }
 .search-box svg { position: absolute; z-index: 1; top: 50%; left: 12px; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; transform: translateY(-50%); pointer-events: none; }
-.search-box input { padding-right: 38px; padding-left: 40px; }
+.search-box input { box-sizing: border-box; height: 40px; padding-top: 0; padding-right: 38px; padding-bottom: 0; padding-left: 40px; }
+.search-box:focus-within input, .search-box input:not(:placeholder-shown) { padding-right: 12px; }
 .search-box kbd { position: absolute; top: 50%; right: 11px; min-width: 18px; padding: 1px 3px; border: 1px solid var(--border-strong); border-radius: 4px; color: var(--muted); background: var(--surface-muted); font: 11px/1.35 system-ui, sans-serif; text-align: center; transform: translateY(-50%); pointer-events: none; }
-.search-box:focus-within kbd { opacity: 0; }
+.search-box:focus-within kbd, .search-box:has(input:not(:placeholder-shown)) kbd { opacity: 0; }
 .search-box:focus-within { color: #0096fa; }
 .toolbar { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
-.archive-auto-save, .archive-include-images { display: flex; align-items: center; gap: 7px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); font-size: 13px; font-weight: 600; cursor: pointer; }
+.archive-auto-save, .archive-include-images { display: flex; align-items: center; box-sizing: border-box; height: 40px; gap: 7px; padding: 0 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); font-size: 13px; font-weight: 600; cursor: pointer; }
 .folder-access { border: 1px solid rgb(0 150 250 / 38%); color: #0096fa; background: rgb(0 150 250 / 10%); font-size: 12px; font-weight: 600; }
 .folder-access:hover { background: rgb(0 150 250 / 16%); }
 .context-bar { display: grid; box-sizing: border-box; min-height: 48px; max-width: 1200px; margin: 16px auto 0; }
@@ -205,7 +207,7 @@ dialog {
   box-shadow: 0 24px 80px rgb(0 0 0 / 55%);
 }
 dialog::backdrop { background: var(--overlay); backdrop-filter: blur(4px); }
-#viewer-content { box-sizing: border-box; max-height: calc(90vh - 72px); padding-right: 10px; overflow: auto; scrollbar-gutter: stable; }
+#viewer-content { box-sizing: border-box; max-height: calc(90vh - 72px); margin-right: -12px; padding-right: 18px; overflow: auto; scrollbar-gutter: stable; }
 #viewer-content .viewer-heading { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px 20px; }
 #viewer-content .viewer-heading h2 { margin: 0; }
 #viewer-content .viewer-source { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; color: var(--muted); font-size: 12px; }
