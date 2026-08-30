@@ -1,8 +1,8 @@
-import { getImages, getWork, saveArchive, updateWorkMetadata } from "./db.js";
-import { getArchiveFolder, getArchiveFolderSelectionId, saveArchiveToFolder } from "./folder.js";
-import { hasUsageConsent, isAutoSaveEnabled, shouldIncludeImages } from "./settings.js";
+import { getWork, saveArchive, updateWorkMetadata } from "./db.js";
+import { getArchiveFolder, saveArchiveToFolder } from "./folder.js";
+import { hasUsageConsent, shouldIncludeImages } from "./settings.js";
 
-const CONTENT_SCRIPT_VERSION = 3;
+const CONTENT_SCRIPT_VERSION = 5;
 
 chrome.runtime.onInstalled.addListener((details) => {
   ensureArtworkTabsConnected();
@@ -28,63 +28,41 @@ async function ensureArtworkTabsConnected() {
 }
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message.type === "REFRESH_WORK_METADATA") {
-    refreshWorkMetadata(message.workId)
+  if (message.type === "COMPLETE_WORK_METADATA") {
+    completeStoredWorkMetadata(message.workId)
       .then((metadata) => sendResponse({ ok: true, metadata }))
       .catch((error) => sendResponse({ ok: false, error: error.message }));
     return true;
   }
-  if (message.type !== "ARCHIVE_WORK" && message.type !== "AUTO_ARCHIVE_WORK") return false;
-  const operation = message.type === "AUTO_ARCHIVE_WORK"
-    ? archiveIfBookmarked(message.work, message.bookmarkAction)
-    : archiveWork(message.work);
-  operation
+  if (message.type !== "ARCHIVE_WORK") return false;
+  archiveWork(message.work)
     .then((result) => sendResponse({ ok: true, ...result }))
     .catch((error) => sendResponse({ ok: false, error: error.message }));
   return true;
 });
 
-async function archiveIfBookmarked(work, bookmarkAction = false) {
-  if (!work?.id) throw new Error("作品IDを取得できませんでした");
-  if (!await hasUsageConsent()) {
-    return { skipped: true, reason: "usage-consent-required" };
-  }
-  if (!await isAutoSaveEnabled()) {
-    return { skipped: true, reason: "auto-save-disabled" };
-  }
-  const existingWork = await getWork(work.id);
-  if (existingWork) return syncExistingWorkToFolder(existingWork);
-
-  if (bookmarkAction) {
-    return archiveWork(work, undefined, { usePageMetadata: true });
-  }
-
-  const details = await getArtworkDetails(work.id);
-  if (!details.bookmarkData) return { skipped: true, reason: "not-bookmarked" };
-
-  const merged = {
-    ...work,
-    ...metadataFromDetails(details, work)
-  };
-  return archiveWork(merged, details);
-}
-
-async function archiveWork(work, suppliedDetails, { usePageMetadata = false } = {}) {
+async function archiveWork(work, { metadataResolved = false } = {}) {
   if (!work?.id) throw new Error("作品IDを取得できませんでした");
   if (!await hasUsageConsent()) {
     throw new Error("記録一覧で利用上の注意を確認し、同意してください");
   }
-
-  const images = [];
   const includeImages = await shouldIncludeImages();
+  if (includeImages) {
+    const folder = await getArchiveFolder();
+    if (!folder) throw new Error("先に記録一覧から記録先フォルダーを選択してください");
+    if (await folder.queryPermission({ mode: "readwrite" }) !== "granted") {
+      throw new Error("記録一覧から記録先フォルダーへのアクセスを再許可してください");
+    }
+  }
+  const images = [];
   let imageReferences;
-  if (usePageMetadata && !includeImages) {
-    imageReferences = embeddedImageReferences(work);
+  if (includeImages) {
+    if (!metadataResolved) work = await enrichWorkMetadata(work);
+    imageReferences = await getImageReferences(work.id, { required: true });
+    images.push(...await downloadImages(imageReferences.originalImageUrls));
   } else {
-    const details = suppliedDetails || await getArtworkDetails(work.id);
-    work = { ...work, ...metadataFromDetails(details, work) };
-    imageReferences = await getImageReferences(work.id, { required: includeImages });
-    if (includeImages) images.push(...await downloadImages(imageReferences.originalImageUrls));
+    if (!metadataResolved) work = await enrichWorkMetadata(work);
+    imageReferences = embeddedImageReferences(work);
   }
 
   const storedWork = {
@@ -136,34 +114,50 @@ function embeddedImageReferences(work) {
   return { originalImageUrls, originalImageFileNames };
 }
 
-async function syncExistingWorkToFolder(work) {
-  const folder = await getArchiveFolder();
-  const selectionId = await getArchiveFolderSelectionId();
-  if (!folder || !selectionId) return { skipped: true, reason: "already-saved" };
-
-  if (work.folderSelectionId === selectionId) {
-    return { skipped: true, reason: "already-saved" };
+async function enrichWorkMetadata(work, { required = false } = {}) {
+  if (!needsMetadataFallback(work)) return work;
+  try {
+    const details = await getArtworkDetails(work.id);
+    return { ...work, ...metadataFromDetails(details, work) };
+  } catch (error) {
+    if (required) throw error;
+    console.warn("Illustration Archive: metadata completion failed", error);
+    return work;
   }
+}
 
-  const images = await getImages(work.id);
-  if (!images.length) return { skipped: true, reason: "images-missing" };
-  const folderResult = await saveArchiveToFolder(work, images);
-  if (!folderResult.saved) {
-    return { skipped: true, reason: folderResult.reason };
-  }
+function needsMetadataFallback(work) {
+  if (work.metadataComplete === true) return false;
+  return !work.creatorId
+    || !work.creatorName
+    || !work.postedAt
+    || !Array.isArray(work.tags)
+    || work.tags.length === 0;
+}
 
-  await updateWorkMetadata(work.id, {
-    folderSelectionId: folderResult.folderSelectionId,
-    folderName: folderResult.folderName,
-    folderDirectoryName: folderResult.folderDirectoryName,
-    imageFiles: folderResult.imageFiles
-  });
+function metadataForStorage(work) {
   return {
-    imageCount: images.length,
-    byteSize: work.byteSize || images.reduce((sum, image) => sum + image.blob.size, 0),
-    folderSaved: true,
-    syncedExisting: true
+    title: work.title,
+    creatorId: work.creatorId,
+    creatorName: work.creatorName,
+    description: work.description,
+    tags: work.tags,
+    postedAt: work.postedAt,
+    pageCount: work.pageCount,
+    sourceUrl: work.sourceUrl,
+    originalImageUrls: work.originalImageUrls,
+    originalImageFileNames: work.originalImageFileNames,
+    metadataComplete: work.metadataComplete === true
   };
+}
+
+async function completeStoredWorkMetadata(workId) {
+  const work = await getWork(workId);
+  if (!work) throw new Error("記録済み作品が見つかりませんでした");
+  const enrichedWork = await enrichWorkMetadata(work, { required: true });
+  const metadata = metadataForStorage(enrichedWork);
+  await updateWorkMetadata(workId, metadata);
+  return metadata;
 }
 
 async function getArtworkDetails(workId) {
@@ -171,9 +165,9 @@ async function getArtworkDetails(workId) {
     credentials: "include",
     cache: "no-store"
   });
-  if (!response.ok) throw new Error(`作品情報の取得に失敗しました (${response.status})`);
+  if (!response.ok) throw new Error(`不足している作品情報の取得に失敗しました (${response.status})`);
   const data = await response.json();
-  if (data.error || !data.body) throw new Error(data.message || "作品情報を取得できませんでした");
+  if (data.error || !data.body) throw new Error(data.message || "不足している作品情報を取得できませんでした");
   return data.body;
 }
 
@@ -183,21 +177,13 @@ function metadataFromDetails(details, fallback = {}) {
     creatorId: String(details.userId || fallback.creatorId || ""),
     creatorName: details.userName || fallback.creatorName || "",
     description: details.description || fallback.description || "",
-    tags: details.tags?.tags?.map((tag) => tag.tag) || fallback.tags || [],
+    tags: details.tags?.tags?.map((tag) => tag.tag)
+      || (Array.isArray(details.tags) ? details.tags : fallback.tags)
+      || [],
     postedAt: details.createDate || fallback.postedAt || null,
-    pageCount: Number(details.pageCount || fallback.pageCount || 0)
+    pageCount: Number(details.pageCount || fallback.pageCount || 0),
+    metadataComplete: true
   };
-}
-
-async function refreshWorkMetadata(workId) {
-  if (!workId) throw new Error("作品IDがありません");
-  const details = await getArtworkDetails(workId);
-  const metadata = {
-    ...metadataFromDetails(details),
-    ...await getImageReferences(workId)
-  };
-  await updateWorkMetadata(workId, metadata);
-  return metadata;
 }
 
 async function getImageReferences(workId, { required = false } = {}) {

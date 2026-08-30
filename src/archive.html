@@ -9,7 +9,6 @@
       <button id="choose-folder">記録先</button>
       <span id="folder-name">記録先: 未選択</span>
       <button id="restore-folder-access" class="folder-access" hidden>アクセスを再許可</button>
-      <label class="archive-auto-save"><span>自動記録</span><input id="archive-auto-save" type="checkbox" role="switch"></label>
       <label class="archive-include-images"><span>画像を含める</span><input id="archive-include-images" type="checkbox" role="switch"></label>
       <label class="search-box">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg>
@@ -81,17 +80,9 @@
     <p class="consent-note">初期設定ではメタデータのみを記録します。</p>
     <button id="usage-consent-agree" class="primary">同意する</button>
   </dialog>
-  <dialog id="archive-auto-save-consent" class="consent-dialog">
-    <h2>自動記録を有効にしますか？</h2>
-    <p>自動記録は非公式の機能です。記録先の空き容量、著作権、閲覧元サービスの利用規約を確認し、ご自身の責任で利用してください。記録した画像を無断で共有・再配布しないでください。</p>
-    <div class="consent-actions">
-      <button id="archive-consent-cancel">キャンセル</button>
-      <button id="archive-consent-agree" class="primary">有効にする</button>
-    </div>
-  </dialog>
   <dialog id="image-recording-consent" class="consent-dialog">
     <h2>画像を記録に含めますか？</h2>
-    <p>作品画像には作者などの権利者の著作権があります。個人的な閲覧の範囲で扱い、無断転載・共有・再配布をしないでください。閲覧元サービスの利用規約と記録先の空き容量を確認し、ご自身の責任で利用してください。</p>
+    <p>オンにすると、作品ページ右下の記録ボタンとポップアップからの記録で画像を取得します。作品画像は個人的な閲覧の範囲で扱い、無断転載・共有・再配布をしないでください。</p>
     <div class="consent-actions">
       <button id="image-consent-cancel">キャンセル</button>
       <button id="image-consent-agree" class="primary">有効にする</button>
@@ -103,7 +94,7 @@
     <ol class="onboarding-steps">
       <li><span>1</span><div><strong>記録内容を選ぶ</strong><p>初期設定はメタデータのみです。</p></div></li>
       <li><span>2</span><div><strong>必要なら記録先を選ぶ</strong><p>画像を含める場合はフォルダーを指定します。</p></div></li>
-      <li><span>3</span><div><strong>作品を記録する</strong><p>手動記録、またはブックマーク時の自動記録を利用できます。</p></div></li>
+      <li><span>3</span><div><strong>作品を記録する</strong><p>作品ページ右下の「記録」ボタンを押します。</p></div></li>
       <li><span>4</span><div><strong>記録一覧で確認する</strong><p>検索や元作品を探すための機能を利用できます。</p></div></li>
     </ol>
     <p class="onboarding-tip"><strong>ヒント</strong> このページをブックマークすると便利です。</p>

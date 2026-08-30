@@ -75,8 +75,8 @@ export function createArchiveViewer(dialog, content) {
     const workId = document.createElement("span");
     workId.textContent = `ID: ${work.id}`;
     const sourceUrl = sourceUrlFor(work);
-    const sourceLink = externalLink(sourceUrl, sourceUrl);
-    source.append(workId, sourceLink);
+    source.append(workId);
+    if (sourceUrl) source.append(externalLink(sourceUrl, sourceUrl));
     heading.append(title, source);
     return heading;
   }
@@ -94,8 +94,8 @@ export function createArchiveViewer(dialog, content) {
     actions.className = "recovery-actions";
     const sourceUrl = sourceUrlFor(work);
     const query = searchQueryFor(work);
+    if (sourceUrl) actions.append(externalLink("元作品ページを開く", sourceUrl));
     actions.append(
-      externalLink("元作品ページを開く", sourceUrl),
       externalLink("Googleで検索", `https://www.google.com/search?q=${encodeURIComponent(query)}`),
       externalLink("Google画像検索", `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(query)}`)
     );
@@ -120,11 +120,13 @@ export function createArchiveViewer(dialog, content) {
   }
 
   function sourceUrlFor(work) {
-    return work.sourceUrl || `https://www.pixiv.net/artworks/${work.id}`;
+    if (work.sourceUrl) return work.sourceUrl;
+    return /^\d+$/.test(String(work.id)) ? `https://www.pixiv.net/artworks/${work.id}` : "";
   }
 
   function searchQueryFor(work) {
-    return [work.id, work.title, work.creatorName, ...(work.originalImageFileNames || []), "pixiv"]
+    const likelyPixivWork = sourceUrlFor(work).includes("pixiv.net") || /^\d+$/.test(String(work.id));
+    return [work.id, work.title, work.creatorName, ...(work.originalImageFileNames || []), likelyPixivWork ? "pixiv" : ""]
       .filter(Boolean)
       .join(" ");
   }

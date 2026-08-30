@@ -1,6 +1,6 @@
 (() => {
 const INSTANCE_KEY = "__ILLUSTRATION_ARCHIVE_INSTANCE__";
-const CONTENT_SCRIPT_VERSION = 3;
+const CONTENT_SCRIPT_VERSION = 5;
 try { globalThis[INSTANCE_KEY]?.dispose?.(); } catch {}
 
 function parsePreload() {
@@ -19,19 +19,32 @@ function currentWork() {
     .filter((url) => typeof url === "string" && url.startsWith("https://i.pximg.net/"));
   const originalImageUrls = [illust?.urls?.original]
     .filter((url) => typeof url === "string" && url.startsWith("https://i.pximg.net/"));
+  const tags = tagNames(illust?.tags);
+  const creatorId = String(illust?.userId || "");
+  const creatorName = illust?.userName || "";
+  const postedAt = illust?.createDate || null;
   return {
     id,
     sourceUrl: location.href,
     title: illust?.title || document.querySelector("h1")?.textContent?.trim() || `pixiv ${id}`,
-    creatorId: String(illust?.userId || ""),
-    creatorName: illust?.userName || "",
+    creatorId,
+    creatorName,
     description: illust?.description || "",
-    tags: illust?.tags?.tags?.map((tag) => tag.tag) || [],
-    postedAt: illust?.createDate || null,
+    tags: tags || [],
+    postedAt,
     pageCount: Number(illust?.pageCount || 0),
     originalImageUrls,
-    originalImageFileNames: [...new Set(embeddedImageUrls.map(imageFileName).filter(Boolean))]
+    originalImageFileNames: [...new Set(embeddedImageUrls.map(imageFileName).filter(Boolean))],
+    metadataComplete: Boolean(illust && creatorId && creatorName && postedAt && tags)
   };
+}
+
+function tagNames(value) {
+  const values = Array.isArray(value) ? value : value?.tags;
+  if (!Array.isArray(values)) return null;
+  return values
+    .map((tag) => typeof tag === "string" ? tag : tag?.tag)
+    .filter(Boolean);
 }
 
 function imageFileName(url) {
@@ -52,37 +65,57 @@ function handleRuntimeMessage(message, _sender, sendResponse) {
 
 chrome.runtime.onMessage.addListener(handleRuntimeMessage);
 
-let autoRecordTimer;
-let bookmarkObserver;
 let disposed = false;
 const instance = { dispose };
 globalThis[INSTANCE_KEY] = instance;
 
-function scheduleAutoRecord(delay = 250) {
-  if (disposed) return;
-  clearTimeout(autoRecordTimer);
-  autoRecordTimer = setTimeout(async () => {
-    if (disposed) return;
-    try {
-      const work = currentWork();
-      const result = await chrome.runtime.sendMessage({
-        type: "AUTO_ARCHIVE_WORK",
-        work,
-        bookmarkAction: true
-      });
-      if (!result?.ok) {
-        showNotice(result?.error || "自動記録に失敗しました", true);
-        return;
-      }
-      if (result?.ok && !result.skipped) showSavedNotice();
-    } catch (error) {
-      if (isInvalidatedContext(error)) {
-        dispose();
-        return;
-      }
-      console.warn("Illustration Archive: automatic recording failed", error);
-    }
-  }, delay);
+const recordButton = createRecordButton();
+let currentArtworkPath = location.pathname;
+const pageObserver = new MutationObserver(updateRecordButton);
+pageObserver.observe(document.documentElement, { childList: true, subtree: true });
+updateRecordButton();
+
+function createRecordButton() {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.dataset.illustrationArchiveRecord = "";
+  button.textContent = "＋ 記録";
+  button.setAttribute("aria-label", "この作品を記録");
+  Object.assign(button.style, {
+    position: "fixed", right: "24px", bottom: "104px", zIndex: "2147483646",
+    minWidth: "88px", height: "42px", padding: "0 16px", border: "0",
+    borderRadius: "21px", color: "white", background: "#0096fa",
+    font: "600 14px system-ui, sans-serif", cursor: "pointer"
+  });
+  button.addEventListener("click", recordCurrentWork);
+  document.documentElement.append(button);
+  return button;
+}
+
+function updateRecordButton() {
+  const artworkPath = location.pathname.match(/^\/artworks\/\d+/)?.[0] || "";
+  recordButton.hidden = !artworkPath;
+  if (artworkPath && artworkPath !== currentArtworkPath) {
+    currentArtworkPath = artworkPath;
+    recordButton.disabled = false;
+    recordButton.textContent = "＋ 記録";
+  }
+}
+
+async function recordCurrentWork() {
+  recordButton.disabled = true;
+  recordButton.textContent = "記録中…";
+  try {
+    const result = await chrome.runtime.sendMessage({ type: "ARCHIVE_WORK", work: currentWork() });
+    if (!result?.ok) throw new Error(result?.error || "記録に失敗しました");
+    recordButton.textContent = "✓ 記録済み";
+    showSavedNotice();
+  } catch (error) {
+    if (isInvalidatedContext(error)) return dispose();
+    recordButton.disabled = false;
+    recordButton.textContent = "再試行";
+    showNotice(error.message || "記録に失敗しました", true);
+  }
 }
 
 function isInvalidatedContext(error) {
@@ -92,8 +125,8 @@ function isInvalidatedContext(error) {
 function dispose() {
   if (disposed) return;
   disposed = true;
-  clearTimeout(autoRecordTimer);
-  bookmarkObserver?.disconnect();
+  pageObserver.disconnect();
+  recordButton.remove();
   try { chrome.runtime.onMessage.removeListener(handleRuntimeMessage); } catch {}
   if (globalThis[INSTANCE_KEY] === instance) delete globalThis[INSTANCE_KEY];
 }
@@ -108,7 +141,7 @@ function showNotice(message, isError = false) {
   notice.dataset.illustrationArchiveNotice = "";
   notice.textContent = message;
   Object.assign(notice.style, {
-    position: "fixed", right: "20px", bottom: "20px", zIndex: "2147483647",
+    position: "fixed", right: "24px", bottom: "156px", zIndex: "2147483647",
     padding: "10px 14px", borderRadius: "10px", color: "white",
     background: isError ? "rgba(156, 45, 58, .96)" : "rgba(22, 27, 34, .94)",
     boxShadow: "0 8px 30px rgba(0,0,0,.3)",
@@ -118,23 +151,4 @@ function showNotice(message, isError = false) {
   setTimeout(() => notice.remove(), 2500);
 }
 
-function isBookmarkAddRequest(entry) {
-  try {
-    const url = new URL(entry.name);
-    const responseStatus = Number(entry.responseStatus || 0);
-    return (responseStatus === 0 || (responseStatus >= 200 && responseStatus < 300))
-      && url.origin === "https://www.pixiv.net"
-      && /^\/ajax\/illusts?\/bookmarks\/add\/?$/.test(url.pathname);
-  } catch {
-    return false;
-  }
-}
-
-if (typeof PerformanceObserver === "function") {
-  bookmarkObserver = new PerformanceObserver((list) => {
-    if (disposed) return;
-    if (list.getEntries().some(isBookmarkAddRequest)) scheduleAutoRecord();
-  });
-  bookmarkObserver.observe({ type: "resource", buffered: false });
-}
 })();

@@ -12,13 +12,9 @@ import { formatBytes } from "./utils.js";
 import { createArchiveViewer } from "./archive-viewer.js";
 import {
   completeOnboarding,
-  disableAutoSave,
   disableImageRecording,
-  enableAutoSave,
   enableImageRecording,
   getFirstRunState,
-  isAutoSaveEnabled,
-  onAutoSaveChanged,
   recordUsageConsent,
   shouldIncludeImages
 } from "./settings.js";
@@ -50,9 +46,7 @@ const viewer = document.querySelector("#viewer");
 const onboarding = document.querySelector("#onboarding");
 const usageConsent = document.querySelector("#usage-consent");
 const shortcutsDialog = document.querySelector("#shortcuts-dialog");
-const archiveAutoSave = document.querySelector("#archive-auto-save");
 const archiveIncludeImages = document.querySelector("#archive-include-images");
-const archiveAutoSaveConsent = document.querySelector("#archive-auto-save-consent");
 const imageRecordingConsent = document.querySelector("#image-recording-consent");
 const restoreFolderAccess = document.querySelector("#restore-folder-access");
 const archiveViewer = createArchiveViewer(viewer, document.querySelector("#viewer-content"));
@@ -62,14 +56,11 @@ let searchQuery = "";
 let activeTag = "";
 let favoriteOnly = false;
 const selectedIds = new Set();
-await repairMissingMetadata();
 applyFilters();
 const initialFolder = await getArchiveFolder();
 showFolderName(initialFolder);
 await updateFolderAccess(initialFolder);
-archiveAutoSave.checked = await isAutoSaveEnabled();
 archiveIncludeImages.checked = await shouldIncludeImages();
-onAutoSaveChanged((enabled) => { archiveAutoSave.checked = enabled; });
 
 archiveIncludeImages.addEventListener("change", async () => {
   if (!archiveIncludeImages.checked) {
@@ -89,26 +80,6 @@ document.querySelector("#image-consent-agree").addEventListener("click", async (
   await enableImageRecording();
   archiveIncludeImages.checked = true;
   imageRecordingConsent.close();
-});
-
-archiveAutoSave.addEventListener("change", async () => {
-  if (!archiveAutoSave.checked) {
-    await disableAutoSave();
-    return;
-  }
-  archiveAutoSave.checked = false;
-  archiveAutoSaveConsent.showModal();
-});
-
-document.querySelector("#archive-consent-cancel").addEventListener("click", () => {
-  archiveAutoSave.checked = false;
-  archiveAutoSaveConsent.close();
-});
-
-document.querySelector("#archive-consent-agree").addEventListener("click", async () => {
-  await enableAutoSave();
-  archiveAutoSave.checked = true;
-  archiveAutoSaveConsent.close();
 });
 
 const firstRunState = await getFirstRunState();
@@ -230,6 +201,7 @@ document.querySelector("#delete-selected").addEventListener("click", async () =>
   button.textContent = "選択項目を削除";
   applyFilters();
 });
+
 document.querySelector("#choose-folder").addEventListener("click", async () => {
   const button = document.querySelector("#choose-folder");
   try {
@@ -243,7 +215,7 @@ document.querySelector("#choose-folder").addEventListener("click", async () => {
       button.textContent = `既存作品をコピー中 ${index + 1}/${works.length}`;
       try {
         let images = await getImages(works[index].id);
-        if (!images.length) {
+        if (!images.length && works[index].imageCount > 0) {
           if (!previousFolder) {
             failures += 1;
             continue;
@@ -401,13 +373,26 @@ function card(work) {
   article.querySelector("h2").textContent = work.title;
   article.querySelector(".creator").textContent = work.creatorName || "作者不明";
   article.querySelector(".meta").textContent = `${work.imageCount}枚・${formatBytes(work.byteSize)}`;
-  article.querySelector("[data-source]").href = work.sourceUrl;
-  const query = [work.id, work.title, work.creatorName, "pixiv"].filter(Boolean).join(" ");
+  const sourceLink = article.querySelector("[data-source]");
+  if (work.sourceUrl) sourceLink.href = work.sourceUrl;
+  else sourceLink.hidden = true;
+  const likelyPixivWork = work.sourceUrl?.includes("pixiv.net") || /^\d+$/.test(String(work.id));
+  const query = [work.id, work.title, work.creatorName, likelyPixivWork ? "pixiv" : ""]
+    .filter(Boolean)
+    .join(" ");
   article.querySelector("[data-google]").href = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
   const viewButton = article.querySelector("[data-view]");
   viewButton.textContent = work.imageCount === 0 ? "元画像を探す" : "画像を開く";
   viewButton.addEventListener("click", () => archiveViewer.showImages(work));
-  article.querySelector("[data-metadata]").addEventListener("click", () => archiveViewer.showMetadata(work));
+  article.querySelector("[data-metadata]").addEventListener("click", async () => {
+    const result = await chrome.runtime.sendMessage({
+      type: "COMPLETE_WORK_METADATA",
+      workId: work.id
+    });
+    if (result?.ok) Object.assign(work, result.metadata);
+    else if (result?.error) alert(result.error);
+    archiveViewer.showMetadata(work);
+  });
   const favoriteButton = article.querySelector(".favorite-button");
   updateFavoriteButton(favoriteButton, work);
   favoriteButton.addEventListener("click", async (event) => {
@@ -446,17 +431,6 @@ function updateFavoriteButton(button, work) {
   const favorite = work.favorite === true;
   button.setAttribute("aria-pressed", String(favorite));
   button.setAttribute("aria-label", favorite ? "お気に入りから削除" : "お気に入りに追加");
-}
-
-async function repairMissingMetadata() {
-  const missing = works.filter((work) => !work.creatorName || !Array.isArray(work.originalImageUrls));
-  await Promise.allSettled(missing.map(async (work) => {
-    const result = await chrome.runtime.sendMessage({
-      type: "REFRESH_WORK_METADATA",
-      workId: work.id
-    });
-    if (result?.ok) Object.assign(work, result.metadata);
-  }));
 }
 
 function showFolderName(handle) {

@@ -1,27 +1,14 @@
 import { initTheme } from "./theme.js";
 import { formatBytes } from "./utils.js";
-import {
-  isAutoSaveEnabled,
-  onAutoSaveChanged,
-  onIncludeImagesChanged,
-  shouldIncludeImages
-} from "./settings.js";
+import { onIncludeImagesChanged, shouldIncludeImages } from "./settings.js";
 
 await initTheme();
 
 const status = document.querySelector("#status");
 const save = document.querySelector("#save");
 
-updateAutoSaveStatus(await isAutoSaveEnabled());
-onAutoSaveChanged(updateAutoSaveStatus);
 updateRecordMode(await shouldIncludeImages());
 onIncludeImagesChanged(updateRecordMode);
-
-function updateAutoSaveStatus(enabled) {
-  const status = document.querySelector("#auto-save-status");
-  status.textContent = enabled ? "オン" : "オフ";
-  status.classList.toggle("enabled", enabled);
-}
 
 function updateRecordMode(includeImages) {
   document.querySelector("#record-mode").textContent = includeImages

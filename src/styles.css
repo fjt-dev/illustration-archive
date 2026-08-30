@@ -75,11 +75,11 @@ button:disabled:hover { transform: none; }
 .auto-save-summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
 .status-badge { padding: 2px 6px; border-radius: 999px; color: var(--muted); background: var(--control); font-size: 10px; font-weight: 700; }
 .status-badge.enabled { color: #0075c4; background: rgb(0 150 250 / 14%); }
-.archive-auto-save input, .archive-include-images input { position: relative; flex: 0 0 auto; width: 38px; height: 22px; min-width: 0; margin: 0; padding: 0; border: 0; border-radius: 999px; appearance: none; background: var(--control); cursor: pointer; transition: background 140ms ease; }
-.archive-auto-save input::after, .archive-include-images input::after { position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: white; box-shadow: 0 1px 4px rgb(0 0 0 / 25%); content: ""; transition: transform 140ms ease; }
-.archive-auto-save input:checked, .archive-include-images input:checked { background: #0096fa; }
-.archive-auto-save input:checked::after, .archive-include-images input:checked::after { transform: translateX(16px); }
-.archive-auto-save input:focus-visible, .archive-include-images input:focus-visible { outline: 2px solid #0096fa; outline-offset: 2px; }
+.archive-include-images input { position: relative; flex: 0 0 auto; width: 38px; height: 22px; min-width: 0; margin: 0; padding: 0; border: 0; border-radius: 999px; appearance: none; background: var(--control); cursor: pointer; transition: background 140ms ease; }
+.archive-include-images input::after { position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: white; box-shadow: 0 1px 4px rgb(0 0 0 / 25%); content: ""; transition: transform 140ms ease; }
+.archive-include-images input:checked { background: #0096fa; }
+.archive-include-images input:checked::after { transform: translateX(16px); }
+.archive-include-images input:focus-visible { outline: 2px solid #0096fa; outline-offset: 2px; }
 .consent-dialog { width: min(260px, calc(100vw - 24px)); padding: 20px; overflow: auto; }
 .consent-dialog h2 { margin: 0 0 10px; font-size: 17px; }
 .consent-dialog p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
@@ -99,7 +99,7 @@ input { min-width: 320px; padding: 11px; border: 1px solid var(--border-strong);
 .search-box:focus-within kbd, .search-box:has(input:not(:placeholder-shown)) kbd { opacity: 0; }
 .search-box:focus-within { color: #0096fa; }
 .toolbar { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
-.archive-auto-save, .archive-include-images { display: flex; align-items: center; box-sizing: border-box; height: 40px; gap: 7px; padding: 0 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); font-size: 13px; font-weight: 600; cursor: pointer; }
+.archive-include-images { display: flex; align-items: center; box-sizing: border-box; height: 40px; gap: 7px; padding: 0 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); font-size: 13px; font-weight: 600; cursor: pointer; }
 .folder-access { border: 1px solid rgb(0 150 250 / 38%); color: #0096fa; background: rgb(0 150 250 / 10%); font-size: 12px; font-weight: 600; }
 .folder-access:hover { background: rgb(0 150 250 / 16%); }
 .context-bar { display: grid; box-sizing: border-box; min-height: 48px; max-width: 1200px; margin: 16px auto 0; }
