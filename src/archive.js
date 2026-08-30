@@ -25,6 +25,8 @@ import {
 
 const themeButton = document.querySelector("#theme-toggle");
 const themeMenu = document.querySelector("#theme-menu");
+const searchInput = document.querySelector("#search");
+const tagFilters = document.querySelector("#tag-filters");
 let selectedTheme = await initTheme(themeButton);
 updateThemeOptions();
 themeMenu.addEventListener("click", async (event) => {
@@ -56,9 +58,12 @@ const restoreFolderAccess = document.querySelector("#restore-folder-access");
 const archiveViewer = createArchiveViewer(viewer, document.querySelector("#viewer-content"));
 let works = await listWorks();
 let visibleWorks = works;
+let searchQuery = "";
+let activeTag = "";
+let favoriteOnly = false;
 const selectedIds = new Set();
 await repairMissingMetadata();
-render(works);
+applyFilters();
 const initialFolder = await getArchiveFolder();
 showFolderName(initialFolder);
 await updateFolderAccess(initialFolder);
@@ -113,10 +118,9 @@ if (!firstRunState.hasUsageConsent) {
   onboarding.showModal();
 }
 
-document.querySelector("#search").addEventListener("input", (event) => {
-  const q = event.target.value.trim().toLowerCase();
-  visibleWorks = works.filter((work) => [work.title, work.creatorName, ...(work.tags || [])].join(" ").toLowerCase().includes(q));
-  render(visibleWorks);
+searchInput.addEventListener("input", (event) => {
+  searchQuery = event.target.value.trim().toLocaleLowerCase();
+  applyFilters();
 });
 document.querySelector("#close").addEventListener("click", () => viewer.close());
 document.querySelector("#open-shortcuts").addEventListener("click", () => shortcutsDialog.showModal());
@@ -214,10 +218,9 @@ document.querySelector("#delete-selected").addEventListener("click", async () =>
   button.textContent = "削除中…";
   await Promise.all(targets.map((work) => deleteWork(work.id)));
   works = works.filter((work) => !selectedIds.has(work.id));
-  visibleWorks = visibleWorks.filter((work) => !selectedIds.has(work.id));
   selectedIds.clear();
   button.textContent = "選択項目を削除";
-  render(visibleWorks);
+  applyFilters();
 });
 document.querySelector("#choose-folder").addEventListener("click", async () => {
   const button = document.querySelector("#choose-folder");
@@ -270,11 +273,89 @@ document.querySelector("#choose-folder").addEventListener("click", async () => {
   }
 });
 
+function applyFilters() {
+  if (activeTag && !works.some((work) => (work.tags || []).some((tag) => normalizeTag(tag) === activeTag))) {
+    activeTag = "";
+  }
+  visibleWorks = works.filter((work) => {
+    const searchable = [work.title, work.creatorName, ...(work.tags || [])]
+      .join(" ")
+      .toLocaleLowerCase();
+    const matchesSearch = !searchQuery || searchable.includes(searchQuery);
+    const matchesTag = !activeTag || (work.tags || []).some((tag) => normalizeTag(tag) === activeTag);
+    const matchesFavorite = !favoriteOnly || work.favorite === true;
+    return matchesSearch && matchesTag && matchesFavorite;
+  });
+  render(visibleWorks);
+}
+
 function render(items) {
   summary.textContent = `${works.length}作品・${formatBytes(works.reduce((sum, work) => sum + (work.byteSize || 0), 0))}`;
+  renderTagFilters();
   grid.replaceChildren(...items.map(card));
-  if (!items.length) grid.textContent = "記録済み作品はありません。";
+  if (!items.length) grid.textContent = works.length ? "条件に一致する作品はありません。" : "記録済み作品はありません。";
   updateSelectionControls();
+}
+
+function renderTagFilters() {
+  const allTags = popularTags();
+  const tags = allTags.slice(0, 10);
+  const selectedTag = allTags.find((tag) => tag.key === activeTag);
+  if (selectedTag && !tags.includes(selectedTag)) {
+    tags.splice(Math.max(0, tags.length - 1), 1, selectedTag);
+  }
+  tagFilters.hidden = works.length === 0 || selectedIds.size > 0;
+  if (works.length === 0) {
+    tagFilters.replaceChildren();
+    return;
+  }
+  if (selectedIds.size > 0) return;
+
+  const favorite = document.createElement("button");
+  favorite.type = "button";
+  favorite.className = "tag-filter favorite-filter";
+  favorite.textContent = "♥ お気に入り";
+  favorite.setAttribute("aria-pressed", String(favoriteOnly));
+  favorite.addEventListener("click", () => {
+    favoriteOnly = !favoriteOnly;
+    applyFilters();
+  });
+
+  const buttons = tags.map((tag, index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `tag-filter tag-color-${index % 8}`;
+    button.textContent = `#${tag.label}`;
+    button.setAttribute("aria-pressed", String(activeTag === tag.key));
+    button.addEventListener("click", () => {
+      activeTag = activeTag === tag.key ? "" : tag.key;
+      applyFilters();
+    });
+    return button;
+  });
+  tagFilters.replaceChildren(favorite, ...buttons);
+}
+
+function popularTags() {
+  const counts = new Map();
+  works.forEach((work) => {
+    const seen = new Set();
+    (work.tags || []).forEach((rawTag) => {
+      const label = String(rawTag || "").trim();
+      const key = normalizeTag(label);
+      if (!key || seen.has(key)) return;
+      seen.add(key);
+      const entry = counts.get(key) || { key, label, count: 0 };
+      entry.count += 1;
+      counts.set(key, entry);
+    });
+  });
+  return [...counts.values()]
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, "ja"));
+}
+
+function normalizeTag(tag) {
+  return String(tag || "").trim().toLocaleLowerCase();
 }
 
 function card(work) {
@@ -298,7 +379,7 @@ function card(work) {
     toggleSelection();
   });
   article.addEventListener("keydown", (event) => {
-    if (event.target.closest(".card-menu")) return;
+    if (event.target.closest(".card-menu, button, a, input, .select-work")) return;
     if (event.key === "Enter") {
       event.preventDefault();
       archiveViewer.showImages(work);
@@ -319,20 +400,44 @@ function card(work) {
   viewButton.textContent = work.imageCount === 0 ? "元画像を探す" : "画像を開く";
   viewButton.addEventListener("click", () => archiveViewer.showImages(work));
   article.querySelector("[data-metadata]").addEventListener("click", () => archiveViewer.showMetadata(work));
-  article.querySelector(".thumb").addEventListener("click", () => archiveViewer.showImages(work));
+  const favoriteButton = article.querySelector(".favorite-button");
+  updateFavoriteButton(favoriteButton, work);
+  favoriteButton.addEventListener("click", async (event) => {
+    event.stopPropagation();
+    if (favoriteButton.dataset.saving === "true") return;
+    const previous = work.favorite === true;
+    work.favorite = !previous;
+    favoriteButton.dataset.saving = "true";
+    updateFavoriteButton(favoriteButton, work);
+    try {
+      await updateWorkMetadata(work.id, { favorite: work.favorite });
+      applyFilters();
+    } catch (error) {
+      work.favorite = previous;
+      delete favoriteButton.dataset.saving;
+      updateFavoriteButton(favoriteButton, work);
+      alert(error.message);
+    }
+  });
+  article.querySelector(".thumb-content").addEventListener("click", () => archiveViewer.showImages(work));
   article.querySelector("[data-delete]").addEventListener("click", async () => {
     if (!confirm(`「${work.title}」を一覧から削除しますか？\n外部フォルダーの画像ファイルは削除されません。`)) return;
     await deleteWork(work.id);
     works = works.filter((item) => item.id !== work.id);
-    visibleWorks = visibleWorks.filter((item) => item.id !== work.id);
     selectedIds.delete(work.id);
-    render(visibleWorks);
+    applyFilters();
   });
   article.querySelectorAll(".card-menu-items a, .card-menu-items button").forEach((item) => {
     item.addEventListener("click", () => article.querySelector(".card-menu").removeAttribute("open"));
   });
-  archiveViewer.loadThumbnail(article.querySelector(".thumb"), work);
+  archiveViewer.loadThumbnail(article.querySelector(".thumb-content"), work);
   return article;
+}
+
+function updateFavoriteButton(button, work) {
+  const favorite = work.favorite === true;
+  button.setAttribute("aria-pressed", String(favorite));
+  button.setAttribute("aria-label", favorite ? "お気に入りから削除" : "お気に入りに追加");
 }
 
 async function repairMissingMetadata() {
@@ -360,6 +465,7 @@ async function updateFolderAccess(handle) {
 function updateSelectionControls() {
   const count = selectedIds.size;
   document.querySelector("#selection-actions").hidden = count === 0;
+  tagFilters.hidden = works.length === 0 || count > 0;
   const deleteButton = document.querySelector("#delete-selected");
   deleteButton.disabled = count === 0;
   deleteButton.textContent = count ? `${count}件を削除` : "選択項目を削除";

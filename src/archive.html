@@ -41,11 +41,14 @@
       </details>
     </div>
   </header>
-  <div id="selection-actions" class="selection-actions" aria-label="選択した作品の操作" hidden>
-    <div class="selection-actions-controls">
-      <button id="select-visible">すべて選択</button>
-      <button id="clear-selection">すべて選択解除</button>
-      <button id="delete-selected" class="danger" disabled>選択項目を削除</button>
+  <div class="context-bar">
+    <nav id="tag-filters" class="tag-filters" aria-label="タグで絞り込み" hidden></nav>
+    <div id="selection-actions" class="selection-actions" aria-label="選択した作品の操作" hidden>
+      <div class="selection-actions-controls">
+        <button id="select-visible">すべて選択</button>
+        <button id="clear-selection">すべて選択解除</button>
+        <button id="delete-selected" class="danger" disabled>選択項目を削除</button>
+      </div>
     </div>
   </div>
   <main id="works" class="grid"></main>
@@ -68,15 +71,15 @@
   <dialog id="usage-consent" class="usage-consent-dialog">
     <div class="onboarding-badge">初回のみ</div>
     <h2>利用上の注意</h2>
-    <p>Illustration Archiveを利用する前に、以下を確認してください。</p>
+    <p>利用前に以下を確認してください。</p>
     <ul>
-      <li>作品の著作権は作者などの権利者に帰属します。</li>
-      <li>記録した画像は個人的な閲覧の範囲で扱い、無断転載・共有・再配布をしないでください。</li>
-      <li>適用される法令と、閲覧元サービスの利用規約を確認して利用してください。</li>
-      <li>記録先の空き容量とファイル管理は利用者自身で確認してください。</li>
+      <li>作品の権利は作者などの権利者に帰属します。</li>
+      <li>記録した画像は個人利用の範囲で扱い、共有・再配布しないでください。</li>
+      <li>外部サービスのアカウント制限・停止について、開発者は責任を負いません。</li>
+      <li>各サービスの規約を確認し、ご自身の責任で利用してください。</li>
     </ul>
-    <p class="consent-note">本表示は法的助言ではありません。利用者自身の判断と責任で利用してください。</p>
-    <button id="usage-consent-agree" class="primary">同意して続ける</button>
+    <p class="consent-note">初期設定ではメタデータのみを記録します。</p>
+    <button id="usage-consent-agree" class="primary">同意する</button>
   </dialog>
   <dialog id="archive-auto-save-consent" class="consent-dialog">
     <h2>自動記録を有効にしますか？</h2>
@@ -96,21 +99,26 @@
   </dialog>
   <dialog id="onboarding" class="onboarding-dialog">
     <div class="onboarding-badge">はじめに</div>
-    <h2>Illustration Archiveの使い方</h2>
+    <h2>使い方</h2>
     <ol class="onboarding-steps">
-      <li><span>1</span><div><strong>必要なら記録先を選択</strong><p>画像を含める場合や、メタデータをファイルとして残す場合にフォルダーを指定します。</p></div></li>
-      <li><span>2</span><div><strong>記録内容を選択</strong><p>初期設定ではメタデータのみを記録します。画像も必要な場合は「画像を含める」をオンにします。</p></div></li>
-      <li><span>3</span><div><strong>作品をいいね</strong><p>pixivの作品ページでいいね（ブックマーク）すると、オンの場合は選択フォルダーへ自動記録されます。</p></div></li>
-      <li><span>4</span><div><strong>記録一覧で確認</strong><p>検索、メタデータ確認、Google検索ができます。画像を含めた場合は画像も閲覧できます。</p></div></li>
+      <li><span>1</span><div><strong>記録内容を選ぶ</strong><p>初期設定はメタデータのみです。</p></div></li>
+      <li><span>2</span><div><strong>必要なら記録先を選ぶ</strong><p>画像を含める場合はフォルダーを指定します。</p></div></li>
+      <li><span>3</span><div><strong>作品を記録する</strong><p>手動記録、またはブックマーク時の自動記録を利用できます。</p></div></li>
+      <li><span>4</span><div><strong>記録一覧で確認する</strong><p>検索や元作品を探すための機能を利用できます。</p></div></li>
     </ol>
-    <p class="onboarding-tip"><strong>ヒント</strong> この記録一覧ページをブラウザでブックマークしておくと、すぐに開けて便利です。</p>
-    <p class="onboarding-reopen">この案内は、画面上部の「使い方」からいつでも再表示できます。</p>
+    <p class="onboarding-tip"><strong>ヒント</strong> このページをブックマークすると便利です。</p>
+    <p class="onboarding-reopen">使い方は画面上部から再表示できます。</p>
     <button id="onboarding-close" class="primary">はじめる</button>
   </dialog>
   <template id="work-card-template">
     <article tabindex="0" role="group">
       <label class="select-work"><input type="checkbox" aria-label="作品を選択"><span aria-hidden="true"></span></label>
-      <div class="thumb">画像を表示</div>
+      <div class="thumb">
+        <div class="thumb-content">画像を表示</div>
+        <button type="button" class="favorite-button" aria-pressed="false" aria-label="お気に入りに追加">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5 4.3 13A5.2 5.2 0 0 1 12 6a5.2 5.2 0 0 1 7.7 7Z"></path></svg>
+        </button>
+      </div>
       <div class="card-info">
         <div class="card-heading">
           <h2></h2>

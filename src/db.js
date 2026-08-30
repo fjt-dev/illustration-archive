@@ -40,7 +40,9 @@ function requestResult(request) {
 export async function saveArchive(work, images, { storeImages = true } = {}) {
   const db = await openDb();
   const tx = db.transaction([WORKS, IMAGES], "readwrite");
+  const workStore = tx.objectStore(WORKS);
   const imageStore = tx.objectStore(IMAGES);
+  const existingWork = await requestResult(workStore.get(work.id));
   const oldKeys = await requestResult(imageStore.index("workId").getAllKeys(work.id));
   oldKeys.forEach((key) => imageStore.delete(key));
   if (storeImages) {
@@ -53,7 +55,8 @@ export async function saveArchive(work, images, { storeImages = true } = {}) {
       byteSize: image.blob.size
     }));
   }
-  tx.objectStore(WORKS).put({
+  workStore.put({
+    ...existingWork,
     ...work,
     archivedAt: new Date().toISOString(),
     imageCount: images.length,
