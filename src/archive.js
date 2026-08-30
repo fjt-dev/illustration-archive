@@ -7,7 +7,7 @@ import {
   requestArchiveFolderPermission,
   saveArchiveToFolder
 } from "./folder.js";
-import { initTheme, toggleTheme } from "./theme.js";
+import { initTheme, setTheme } from "./theme.js";
 import { formatBytes } from "./utils.js";
 import { createArchiveViewer } from "./archive-viewer.js";
 import {
@@ -24,8 +24,23 @@ import {
 } from "./settings.js";
 
 const themeButton = document.querySelector("#theme-toggle");
-await initTheme(themeButton);
-themeButton.addEventListener("click", () => toggleTheme(themeButton));
+const themeMenu = document.querySelector("#theme-menu");
+let selectedTheme = await initTheme(themeButton);
+updateThemeOptions();
+themeMenu.addEventListener("click", async (event) => {
+  const option = event.target.closest("[data-theme-value]");
+  if (!option) return;
+  selectedTheme = await setTheme(option.dataset.themeValue, themeButton);
+  updateThemeOptions();
+  themeMenu.removeAttribute("open");
+  themeButton.focus();
+});
+
+function updateThemeOptions() {
+  themeMenu.querySelectorAll("[data-theme-value]").forEach((option) => {
+    option.setAttribute("aria-checked", String(option.dataset.themeValue === selectedTheme));
+  });
+}
 
 const grid = document.querySelector("#works");
 const summary = document.querySelector("#summary");
@@ -128,12 +143,19 @@ function highlightChooseFolder() {
   setTimeout(() => button.classList.remove("guide-attention"), 3600);
 }
 document.addEventListener("click", (event) => {
+  if (themeMenu.open && !themeMenu.contains(event.target)) themeMenu.removeAttribute("open");
   document.querySelectorAll(".card-menu[open]").forEach((menu) => {
     if (!menu.contains(event.target)) menu.removeAttribute("open");
   });
 });
 document.addEventListener("keydown", (event) => {
   const editing = event.target.matches("input, textarea, [contenteditable='true']");
+  if (event.key === "Escape" && themeMenu.open) {
+    event.preventDefault();
+    themeMenu.removeAttribute("open");
+    themeButton.focus();
+    return;
+  }
   if (event.key === "Escape" && event.target.matches("#search")) {
     event.preventDefault();
     event.target.blur();

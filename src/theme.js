@@ -1,33 +1,49 @@
 const THEME_KEY = "appearanceTheme";
+const THEMES = new Set(["light", "dark", "system"]);
 const media = matchMedia("(prefers-color-scheme: dark)");
 
 export async function initTheme(button) {
   const { [THEME_KEY]: saved = "system" } = await chrome.storage.local.get(THEME_KEY);
-  applyTheme(saved, button);
+  const theme = THEMES.has(saved) ? saved : "system";
+  applyTheme(theme, button);
   media.addEventListener("change", () => {
-    if (!document.documentElement.dataset.theme) updateButton(button);
+    if (!document.documentElement.dataset.theme) updateButton(button, "system");
   });
+  return theme;
 }
 
-export async function toggleTheme(button) {
-  const current = effectiveTheme();
-  const next = current === "dark" ? "light" : "dark";
-  await chrome.storage.local.set({ [THEME_KEY]: next });
-  applyTheme(next, button);
+export async function setTheme(theme, button) {
+  if (!THEMES.has(theme)) throw new Error("未対応のテーマです");
+  await chrome.storage.local.set({ [THEME_KEY]: theme });
+  applyTheme(theme, button);
+  return theme;
 }
 
 function applyTheme(theme, button) {
   if (theme === "system") delete document.documentElement.dataset.theme;
   else document.documentElement.dataset.theme = theme;
-  updateButton(button);
+  updateButton(button, theme);
 }
 
 function effectiveTheme() {
   return document.documentElement.dataset.theme || (media.matches ? "dark" : "light");
 }
 
-function updateButton(button) {
+function updateButton(button, selectedTheme = "system") {
   if (!button) return;
+  const icons = button.querySelectorAll("[data-theme-icon]");
+  if (icons.length) {
+    icons.forEach((icon) => { icon.hidden = icon.dataset.themeIcon !== selectedTheme; });
+    const labels = {
+      light: "ライトモード",
+      dark: "ダークモード",
+      system: "デバイスのデフォルト"
+    };
+    button.dataset.selectedTheme = selectedTheme;
+    button.title = `表示: ${labels[selectedTheme]}`;
+    button.setAttribute("aria-label", `表示テーマ: ${labels[selectedTheme]}`);
+    return;
+  }
   const dark = effectiveTheme() === "dark";
   button.textContent = dark ? "🌙" : "☀️";
   button.title = dark ? "ライトモードに切り替える" : "ダークモードに切り替える";
