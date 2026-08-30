@@ -18,9 +18,11 @@
       </label>
       <details id="theme-menu" class="theme-menu">
         <summary id="theme-toggle" aria-haspopup="menu" aria-label="表示テーマを選択">
-          <svg data-theme-icon="light" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
-          <svg data-theme-icon="dark" viewBox="0 0 24 24" aria-hidden="true" hidden><path d="M20.2 15.2A8.5 8.5 0 0 1 8.8 3.8 8.5 8.5 0 1 0 20.2 15.2Z"></path></svg>
-          <svg data-theme-icon="system" viewBox="0 0 24 24" aria-hidden="true" hidden><circle cx="12" cy="12" r="8"></circle><path d="M12 4a8 8 0 0 1 0 16Z"></path></svg>
+          <svg data-theme-current-icon viewBox="0 0 24 24" aria-hidden="true">
+            <g data-theme-shape="light"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></g>
+            <g data-theme-shape="dark"><path d="M20.2 15.2A8.5 8.5 0 0 1 8.8 3.8 8.5 8.5 0 1 0 20.2 15.2Z"></path></g>
+            <g data-theme-shape="system"><circle cx="12" cy="12" r="8"></circle><path d="M12 4a8 8 0 0 1 0 16Z"></path></g>
+          </svg>
         </summary>
         <div class="theme-menu-items" role="menu" aria-label="表示テーマ">
           <button type="button" role="menuitemradio" data-theme-value="light">

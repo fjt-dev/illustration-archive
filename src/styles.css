@@ -110,11 +110,13 @@ input { min-width: 320px; padding: 11px; border: 1px solid var(--border-strong);
 #theme-toggle:hover, .theme-menu[open] #theme-toggle { border-color: #0096fa; color: var(--text); background: var(--surface-muted); }
 #theme-toggle:focus-visible { outline: 2px solid #0096fa; outline-offset: 2px; }
 #theme-toggle svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-#theme-toggle [data-theme-icon="dark"] { fill: currentColor; stroke: none; }
-#theme-toggle [data-theme-icon="system"] path { fill: currentColor; stroke: none; }
+#theme-toggle [data-theme-shape] { display: none; }
+#theme-toggle[data-selected-theme="light"] [data-theme-shape="light"], #theme-toggle[data-selected-theme="dark"] [data-theme-shape="dark"], #theme-toggle[data-selected-theme="system"] [data-theme-shape="system"] { display: inline; }
+#theme-toggle [data-theme-shape="dark"] { fill: currentColor; stroke: none; }
+#theme-toggle [data-theme-shape="system"] path { fill: currentColor; stroke: none; }
 .theme-menu-items { position: absolute; z-index: 6; top: calc(100% + 8px); right: 0; display: grid; box-sizing: border-box; width: 230px; padding: 6px; border: 1px solid var(--border-strong); border-radius: 12px; background: var(--surface-raised); box-shadow: 0 14px 36px var(--shadow); }
 .theme-menu-items button { display: grid; grid-template-columns: 26px minmax(0, 1fr) 18px; align-items: center; gap: 10px; width: 100%; padding: 11px 10px; color: var(--muted); background: transparent; text-align: left; }
-.theme-menu-items button:hover, .theme-menu-items button[aria-checked="true"] { color: var(--text); background: var(--surface-muted); }
+.theme-menu-items button:hover { color: var(--text); background: var(--surface-muted); }
 .theme-menu-items button[aria-checked="true"]::after { justify-self: center; width: 8px; height: 4px; border-bottom: 2px solid #0096fa; border-left: 2px solid #0096fa; content: ""; transform: translateY(-1px) rotate(-45deg); }
 .theme-menu-items svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .theme-menu-items [data-theme-value="dark"] svg { fill: currentColor; stroke: none; }

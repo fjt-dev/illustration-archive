@@ -31,9 +31,7 @@ function effectiveTheme() {
 
 function updateButton(button, selectedTheme = "system") {
   if (!button) return;
-  const icons = button.querySelectorAll("[data-theme-icon]");
-  if (icons.length) {
-    icons.forEach((icon) => { icon.hidden = icon.dataset.themeIcon !== selectedTheme; });
+  if (button.querySelector("[data-theme-current-icon]")) {
     const labels = {
       light: "ライトモード",
       dark: "ダークモード",
