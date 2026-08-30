@@ -80,6 +80,7 @@ document.querySelector("#image-consent-agree").addEventListener("click", async (
   await enableImageRecording();
   archiveIncludeImages.checked = true;
   imageRecordingConsent.close();
+  requestAnimationFrame(highlightChooseFolder);
 });
 
 const firstRunState = await getFirstRunState();
