@@ -302,10 +302,10 @@ function renderTagFilters() {
     applyFilters();
   });
 
-  const buttons = tags.map((tag, index) => {
+  const buttons = tags.map((tag) => {
     const button = document.createElement("button");
     button.type = "button";
-    button.className = `tag-filter tag-color-${index % 8}`;
+    button.className = "tag-filter";
     button.textContent = `#${tag.label}`;
     button.setAttribute("aria-pressed", String(activeTag === tag.key));
     button.addEventListener("click", () => {
