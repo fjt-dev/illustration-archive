@@ -1,6 +1,6 @@
 (() => {
 const INSTANCE_KEY = "__ILLUSTRATION_ARCHIVE_INSTANCE__";
-const CONTENT_SCRIPT_VERSION = 5;
+const CONTENT_SCRIPT_VERSION = 6;
 try { globalThis[INSTANCE_KEY]?.dispose?.(); } catch {}
 
 function parsePreload() {

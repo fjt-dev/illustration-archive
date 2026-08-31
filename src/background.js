@@ -2,7 +2,7 @@ import { getWork, saveArchive, updateWorkMetadata } from "./db.js";
 import { getArchiveFolder, saveArchiveToFolder } from "./folder.js";
 import { hasUsageConsent, shouldIncludeImages } from "./settings.js";
 
-const CONTENT_SCRIPT_VERSION = 5;
+const CONTENT_SCRIPT_VERSION = 6;
 
 chrome.runtime.onInstalled.addListener((details) => {
   ensureArtworkTabsConnected();
@@ -11,7 +11,7 @@ chrome.runtime.onInstalled.addListener((details) => {
 ensureArtworkTabsConnected();
 
 async function ensureArtworkTabsConnected() {
-  const tabs = await chrome.tabs.query({ url: "https://www.pixiv.net/artworks/*" });
+  const tabs = await chrome.tabs.query({ url: "https://www.pixiv.net/*" });
   await Promise.allSettled(tabs
     .filter((tab) => tab.id)
     .map(async (tab) => {

@@ -27,7 +27,7 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://www.pixiv.net/artworks/*"],
+      "matches": ["https://www.pixiv.net/*"],
       "js": ["src/content.js"],
       "run_at": "document_idle"
     }
