@@ -1,20 +1,32 @@
-import { getImages } from "./db.js";
-import { readArchiveImages } from "./folder.js";
+import { getImage } from "./db.js";
+import { readArchiveImage } from "./folder.js";
 import { formatBytes, formatDate, htmlToPlainText } from "./utils.js";
 
-export function createArchiveViewer(dialog, content) {
+export function createArchiveViewer(panel, content, metadataDialog, metadataContent) {
+  let activeObjectUrl = "";
+  let renderToken = 0;
+  let previousFocus = null;
+
   function openViewer() {
-    if (!dialog.open) dialog.showModal();
+    const wasHidden = panel.hidden;
+    previousFocus = wasHidden ? document.activeElement : previousFocus;
+    panel.hidden = false;
     document.documentElement.classList.add("viewer-open");
+    if (wasHidden) requestAnimationFrame(() => panel.querySelector("#close")?.focus());
   }
 
-  dialog.addEventListener("close", () => {
+  function closeViewer() {
+    renderToken += 1;
+    releaseObjectUrl();
+    panel.hidden = true;
+    content.replaceChildren();
     document.documentElement.classList.remove("viewer-open");
-  });
+    if (previousFocus instanceof HTMLElement && previousFocus.isConnected) previousFocus.focus();
+    previousFocus = null;
+  }
 
-  async function loadStoredImages(work) {
-    const browserImages = await getImages(work.id);
-    return browserImages.length ? browserImages : readArchiveImages(work);
+  async function loadStoredImage(work, index = 0) {
+    return await getImage(work.id, index) || readArchiveImage(work, index);
   }
 
   async function loadThumbnail(node, work) {
@@ -23,16 +35,15 @@ export function createArchiveViewer(dialog, content) {
       return;
     }
     let image;
-    try {
-      [image] = await loadStoredImages(work);
-    } catch {
+    try { image = await loadStoredImage(work, 0); }
+    catch {
       node.textContent = "画像を読み込めません";
       return;
     }
     if (!image) return;
-
     const url = URL.createObjectURL(image.blob);
     const thumbnail = new Image();
+    thumbnail.alt = "";
     thumbnail.src = url;
     thumbnail.onload = () => URL.revokeObjectURL(url);
     thumbnail.onerror = () => URL.revokeObjectURL(url);
@@ -40,50 +51,98 @@ export function createArchiveViewer(dialog, content) {
   }
 
   async function showImages(work) {
-    content.textContent = "読み込み中…";
+    const token = ++renderToken;
+    releaseObjectUrl();
     openViewer();
-
-    let images = [];
-    if (work.imageCount > 0) {
-      try { images = await loadStoredImages(work); }
-      catch { /* Show search assistance when the recorded image is unavailable. */ }
-    }
     const heading = createViewerHeading(work);
-    if (!images.length) {
+    if (work.imageCount === 0) {
       content.replaceChildren(heading, createRecoveryPanel(work));
       return;
     }
 
-    const imageNodes = images.map((image) => {
-      const node = new Image();
-      const url = URL.createObjectURL(image.blob);
-      node.src = url;
-      node.onload = () => URL.revokeObjectURL(url);
-      node.onerror = () => URL.revokeObjectURL(url);
-      return node;
-    });
-    content.replaceChildren(heading, ...imageNodes);
+    const stage = document.createElement("div");
+    stage.className = "viewer-stage";
+    stage.textContent = "読み込み中…";
+    const controls = createPageControls(work.imageCount);
+    content.replaceChildren(heading, stage, controls.root);
+
+    const renderPage = async (index) => {
+      controls.setLoading(true);
+      stage.textContent = "読み込み中…";
+      releaseObjectUrl();
+      try {
+        const image = await loadStoredImage(work, index);
+        if (token !== renderToken) return;
+        if (!image) throw new Error("画像を読み込めません");
+        activeObjectUrl = URL.createObjectURL(image.blob);
+        const node = new Image();
+        node.alt = `${work.title} ${index + 1}ページ目`;
+        node.src = activeObjectUrl;
+        stage.replaceChildren(node);
+        controls.setIndex(index);
+      } catch {
+        if (token !== renderToken) return;
+        stage.replaceChildren(createRecoveryPanel(work));
+      } finally {
+        if (token === renderToken) controls.setLoading(false);
+      }
+    };
+
+    controls.previous.addEventListener("click", () => renderPage(controls.index - 1));
+    controls.next.addEventListener("click", () => renderPage(controls.index + 1));
+    await renderPage(0);
+  }
+
+  function createPageControls(count) {
+    const root = document.createElement("div");
+    root.className = "viewer-controls";
+    const previous = document.createElement("button");
+    previous.type = "button";
+    previous.textContent = "← 前へ";
+    const status = document.createElement("span");
+    const next = document.createElement("button");
+    next.type = "button";
+    next.textContent = "次へ →";
+    const state = {
+      root, previous, next, index: 0,
+      setIndex(index) {
+        state.index = index;
+        status.textContent = `${index + 1} / ${count}`;
+        previous.disabled = index <= 0;
+        next.disabled = index >= count - 1;
+      },
+      setLoading(loading) {
+        previous.disabled = loading || state.index <= 0;
+        next.disabled = loading || state.index >= count - 1;
+      }
+    };
+    state.setIndex(0);
+    root.append(previous, status, next);
+    return state;
   }
 
   function createViewerHeading(work) {
     const heading = document.createElement("div");
     heading.className = "viewer-heading";
     const title = document.createElement("h2");
-    title.textContent = `${work.title} — ${work.creatorName || "作者不明"}`;
+    title.textContent = work.title;
+    const creator = document.createElement("p");
+    creator.className = "viewer-creator";
+    creator.textContent = work.creatorName || "作者不明";
     const source = document.createElement("div");
     source.className = "viewer-source";
     const workId = document.createElement("span");
     workId.textContent = `ID: ${work.id}`;
-    const sourceUrl = sourceUrlFor(work);
     source.append(workId);
-    if (sourceUrl) source.append(externalLink(sourceUrl, sourceUrl));
-    heading.append(title, source);
+    const sourceUrl = sourceUrlFor(work);
+    if (sourceUrl) source.append(externalLink("元作品を開く", sourceUrl));
+    heading.append(title, creator, source);
     return heading;
   }
 
   function createRecoveryPanel(work) {
-    const panel = document.createElement("section");
-    panel.className = "recovery-panel";
+    const recovery = document.createElement("section");
+    recovery.className = "recovery-panel";
     const title = document.createElement("h3");
     title.textContent = "元画像を探す";
     const message = document.createElement("p");
@@ -99,15 +158,8 @@ export function createArchiveViewer(dialog, content) {
       externalLink("Googleで検索", `https://www.google.com/search?q=${encodeURIComponent(query)}`),
       externalLink("Google画像検索", `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(query)}`)
     );
-    const originalUrl = work.originalImageUrls?.[0];
-    if (originalUrl) {
-      actions.append(externalLink(
-        "元画像URLを検索",
-        `https://www.google.com/search?q=${encodeURIComponent(`"${originalUrl}"`)}`
-      ));
-    }
-    panel.append(title, message, actions);
-    return panel;
+    recovery.append(title, message, actions);
+    return recovery;
   }
 
   function externalLink(label, href) {
@@ -134,21 +186,15 @@ export function createArchiveViewer(dialog, content) {
     const title = document.createElement("h2");
     title.textContent = "記録メタデータ";
     const fields = [
-      ["作品ID", work.id],
-      ["タイトル", work.title],
-      ["作者", work.creatorName || "不明"],
-      ["作者ID", work.creatorId || "不明"],
-      ["タグ", work.tags?.length ? work.tags.join(" / ") : "なし"],
-      ["説明", htmlToPlainText(work.description) || "なし"],
-      ["投稿日", formatDate(work.postedAt)],
-      ["記録日時", formatDate(work.archivedAt)],
-      ["ページ数", `${work.pageCount || work.imageCount || 0}ページ`],
+      ["作品ID", work.id], ["タイトル", work.title], ["作者", work.creatorName || "不明"],
+      ["作者ID", work.creatorId || "不明"], ["タグ", work.tags?.length ? work.tags.join(" / ") : "なし"],
+      ["説明", htmlToPlainText(work.description) || "なし"], ["投稿日", formatDate(work.postedAt)],
+      ["記録日時", formatDate(work.archivedAt)], ["ページ数", `${work.pageCount || work.imageCount || 0}ページ`],
       ["記録内容", work.imageCount > 0 ? "メタデータと画像" : "メタデータのみ"],
       ["記録容量", formatBytes(work.byteSize)],
       ["元画像ファイル名", work.originalImageFileNames?.join(" / ") || "記録なし"],
       ["元URL", work.sourceUrl || "なし"]
     ];
-
     const list = document.createElement("dl");
     list.className = "metadata-list";
     fields.forEach(([label, value]) => {
@@ -158,9 +204,15 @@ export function createArchiveViewer(dialog, content) {
       description.textContent = String(value ?? "");
       list.append(term, description);
     });
-    content.replaceChildren(title, list);
-    openViewer();
+    metadataContent.replaceChildren(title, list);
+    metadataDialog.showModal();
   }
 
-  return { loadThumbnail, showImages, showMetadata };
+  function releaseObjectUrl() {
+    if (!activeObjectUrl) return;
+    URL.revokeObjectURL(activeObjectUrl);
+    activeObjectUrl = "";
+  }
+
+  return { close: closeViewer, loadThumbnail, showImages, showMetadata };
 }

@@ -43,13 +43,19 @@ function updateThemeOptions() {
 const grid = document.querySelector("#works");
 const summary = document.querySelector("#summary");
 const viewer = document.querySelector("#viewer");
+const metadataViewer = document.querySelector("#metadata-viewer");
 const onboarding = document.querySelector("#onboarding");
 const usageConsent = document.querySelector("#usage-consent");
 const shortcutsDialog = document.querySelector("#shortcuts-dialog");
 const archiveIncludeImages = document.querySelector("#archive-include-images");
 const imageRecordingConsent = document.querySelector("#image-recording-consent");
 const restoreFolderAccess = document.querySelector("#restore-folder-access");
-const archiveViewer = createArchiveViewer(viewer, document.querySelector("#viewer-content"));
+const archiveViewer = createArchiveViewer(
+  viewer,
+  document.querySelector("#viewer-content"),
+  metadataViewer,
+  document.querySelector("#metadata-content")
+);
 let works = await listWorks();
 let visibleWorks = works;
 let searchQuery = "";
@@ -94,15 +100,8 @@ searchInput.addEventListener("input", (event) => {
   searchQuery = event.target.value.trim().toLocaleLowerCase();
   applyFilters();
 });
-document.querySelector("#close").addEventListener("click", () => viewer.close());
-viewer.addEventListener("click", (event) => {
-  const bounds = viewer.getBoundingClientRect();
-  const outsideViewer = event.clientX < bounds.left
-    || event.clientX > bounds.right
-    || event.clientY < bounds.top
-    || event.clientY > bounds.bottom;
-  if (outsideViewer) viewer.close();
-});
+document.querySelector("#close").addEventListener("click", () => archiveViewer.close());
+document.querySelector("#close-metadata").addEventListener("click", () => metadataViewer.close());
 document.querySelector("#open-shortcuts").addEventListener("click", () => shortcutsDialog.showModal());
 document.querySelector("#close-shortcuts").addEventListener("click", () => shortcutsDialog.close());
 document.querySelector("#open-guide").addEventListener("click", () => onboarding.showModal());
@@ -134,6 +133,11 @@ document.addEventListener("click", (event) => {
 });
 document.addEventListener("keydown", (event) => {
   const editing = event.target.matches("input, textarea, [contenteditable='true']");
+  if (event.key === "Escape" && !viewer.hidden && !metadataViewer.open) {
+    event.preventDefault();
+    archiveViewer.close();
+    return;
+  }
   if (event.key === "Escape" && themeMenu.open) {
     event.preventDefault();
     themeMenu.removeAttribute("open");
@@ -379,9 +383,6 @@ function card(work) {
   else sourceLink.hidden = true;
   const query = [work.id, work.title, work.creatorName].filter(Boolean).join(" ");
   article.querySelector("[data-google]").href = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
-  const viewButton = article.querySelector("[data-view]");
-  viewButton.textContent = work.imageCount === 0 ? "元画像を探す" : "画像を開く";
-  viewButton.addEventListener("click", () => archiveViewer.showImages(work));
   article.querySelector("[data-metadata]").addEventListener("click", async () => {
     const result = await chrome.runtime.sendMessage({
       type: "COMPLETE_WORK_METADATA",
