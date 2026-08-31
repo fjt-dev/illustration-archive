@@ -64,11 +64,31 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     stage.className = "viewer-stage";
     stage.textContent = "読み込み中…";
     const controls = createPageControls(work.imageCount);
+    let currentImage = null;
+    const applyZoom = () => {
+      if (!currentImage?.naturalWidth) return;
+      const availableWidth = Math.max(1, stage.clientWidth - 40);
+      const availableHeight = Math.max(1, stage.clientHeight - 40);
+      const fittedScale = Math.min(
+        availableWidth / currentImage.naturalWidth,
+        availableHeight / currentImage.naturalHeight,
+        1
+      );
+      currentImage.style.width = `${Math.max(1, Math.round(currentImage.naturalWidth * fittedScale * controls.zoom))}px`;
+      currentImage.style.maxWidth = "none";
+      currentImage.style.maxHeight = "none";
+      stage.classList.toggle("is-zoomed", controls.zoom > 1);
+    };
+    controls.onZoom = applyZoom;
     content.replaceChildren(heading, stage, controls.root);
 
     const renderPage = async (index) => {
       controls.setLoading(true);
       stage.textContent = "読み込み中…";
+      stage.classList.remove("is-zoomed");
+      stage.scrollTo({ top: 0, left: 0 });
+      currentImage = null;
+      controls.resetZoom();
       releaseObjectUrl();
       try {
         const image = await loadStoredImage(work, index);
@@ -77,6 +97,11 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
         activeObjectUrl = URL.createObjectURL(image.blob);
         const node = new Image();
         node.alt = `${work.title} ${index + 1}ページ目`;
+        node.onload = () => {
+          if (token !== renderToken) return;
+          currentImage = node;
+          applyZoom();
+        };
         node.src = activeObjectUrl;
         stage.replaceChildren(node);
         controls.setIndex(index);
@@ -103,21 +128,55 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     const next = document.createElement("button");
     next.type = "button";
     next.textContent = "次へ →";
+    const paging = document.createElement("div");
+    paging.className = "viewer-pagination";
+    paging.append(previous, status, next);
+    const zoomOut = document.createElement("button");
+    zoomOut.type = "button";
+    zoomOut.textContent = "−";
+    zoomOut.setAttribute("aria-label", "縮小");
+    const zoomLabel = document.createElement("output");
+    const zoomIn = document.createElement("button");
+    zoomIn.type = "button";
+    zoomIn.textContent = "+";
+    zoomIn.setAttribute("aria-label", "拡大");
+    const zoomControls = document.createElement("div");
+    zoomControls.className = "viewer-zoom";
+    zoomControls.append(zoomOut, zoomLabel, zoomIn);
     const state = {
-      root, previous, next, index: 0,
+      root, previous, next, zoomOut, zoomIn, index: 0, zoom: 1, onZoom: null,
       setIndex(index) {
         state.index = index;
         status.textContent = `${index + 1} / ${count}`;
-        previous.disabled = index <= 0;
-        next.disabled = index >= count - 1;
+        state.updateDisabled();
       },
       setLoading(loading) {
-        previous.disabled = loading || state.index <= 0;
-        next.disabled = loading || state.index >= count - 1;
+        state.loading = loading;
+        state.updateDisabled();
+      },
+      resetZoom() {
+        state.zoom = 1;
+        zoomLabel.value = "100%";
+        state.updateDisabled();
+      },
+      setZoom(zoom) {
+        state.zoom = Math.min(3, Math.max(1, zoom));
+        zoomLabel.value = `${Math.round(state.zoom * 100)}%`;
+        state.updateDisabled();
+        state.onZoom?.();
+      },
+      updateDisabled() {
+        previous.disabled = Boolean(state.loading) || state.index <= 0;
+        next.disabled = Boolean(state.loading) || state.index >= count - 1;
+        zoomOut.disabled = Boolean(state.loading) || state.zoom <= 1;
+        zoomIn.disabled = Boolean(state.loading) || state.zoom >= 3;
       }
     };
+    zoomOut.addEventListener("click", () => state.setZoom(state.zoom - 0.25));
+    zoomIn.addEventListener("click", () => state.setZoom(state.zoom + 0.25));
     state.setIndex(0);
-    root.append(previous, status, next);
+    state.resetZoom();
+    root.append(paging, zoomControls);
     return state;
   }
 

@@ -451,13 +451,17 @@ html.viewer-open .selection-actions { left: calc((100vw - var(--gallery-viewer-w
   border-radius: 28px;
   color: var(--muted);
   background: var(--surface-muted);
+  overflow: auto;
 }
 .viewer-stage > img { display: block; max-width: 100%; max-height: calc(100dvh - 276px); margin: 0; object-fit: contain; }
+.viewer-stage.is-zoomed { display: block; }
+.viewer-stage.is-zoomed > img { margin: 0; }
 .viewer-controls {
   position: sticky;
   bottom: -1px;
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
   gap: 12px;
   margin-top: 18px;
@@ -465,8 +469,9 @@ html.viewer-open .selection-actions { left: calc((100vw - var(--gallery-viewer-w
   background: var(--surface);
 }
 .viewer-controls button { border-radius: 28px; background: var(--control); }
-.viewer-controls button:last-child { justify-self: end; }
-.viewer-controls span { color: var(--muted); font-size: 13px; }
+.viewer-pagination, .viewer-zoom { display: flex; align-items: center; gap: 8px; }
+.viewer-pagination span, .viewer-zoom output { min-width: 46px; color: var(--muted); font-size: 13px; text-align: center; }
+.viewer-zoom button { display: grid; width: 36px; height: 36px; padding: 0; place-items: center; font-size: 19px; }
 #close { top: 24px; right: 24px; border-radius: 50%; }
 .metadata-dialog { width: min(760px, calc(100vw - 32px)); padding: 28px; overflow: auto; }
 #close-metadata { display: block; margin: 0 0 0 auto; border-radius: 28px; }
