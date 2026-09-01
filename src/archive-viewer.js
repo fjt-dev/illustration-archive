@@ -101,10 +101,16 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
       return;
     }
 
+    const hasAdjacentWork = (delta) => {
+      if (!works || index < 0) return false;
+      const targetIndex = index + (delta > 0 ? 1 : -1);
+      return targetIndex >= 0 && targetIndex < works.length;
+    };
+
     const stage = document.createElement("div");
     stage.className = "viewer-stage";
     stage.textContent = "読み込み中…";
-    const controls = createPageControls(work.imageCount);
+    const controls = createPageControls(work.imageCount, hasAdjacentWork);
     content.replaceChildren(heading, stage, controls.root);
 
     const renderPage = async (index) => {
@@ -143,7 +149,7 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     await renderPage(startAtEnd ? work.imageCount - 1 : 0);
   }
 
-  function createPageControls(count) {
+  function createPageControls(count, canStepFurther) {
     const root = document.createElement("div");
     root.className = "viewer-controls";
     const previous = document.createElement("button");
@@ -158,10 +164,16 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
       setIndex(index) {
         state.index = index;
         status.textContent = `${index + 1} / ${count}`;
+        previous.disabled = index <= 0 && !canStepFurther(-1);
+        next.disabled = index >= count - 1 && !canStepFurther(1);
       },
       setLoading(loading) {
-        previous.disabled = loading;
-        next.disabled = loading;
+        if (loading) {
+          previous.disabled = true;
+          next.disabled = true;
+          return;
+        }
+        state.setIndex(state.index);
       }
     };
     state.setIndex(0);
