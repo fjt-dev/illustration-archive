@@ -15,15 +15,21 @@
         <input id="search" type="search" placeholder="タイトル・作者・タグで検索">
         <kbd>/</kbd>
       </label>
-      <select id="sort-select" class="sort-select" aria-label="並び替え">
-        <option value="archived-desc">記録日時の新しい順</option>
-        <option value="archived-asc">記録日時の古い順</option>
-        <option value="posted-desc">投稿日の新しい順</option>
-        <option value="posted-asc">投稿日の古い順</option>
-        <option value="title-asc">タイトル順</option>
-        <option value="creator-asc">作者名順</option>
-        <option value="size-desc">サイズの大きい順</option>
-      </select>
+      <details id="sort-menu" class="sort-menu">
+        <summary id="sort-toggle" aria-haspopup="menu" aria-label="並び替え">
+          <span id="sort-toggle-label">記録日時の新しい順</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"></path></svg>
+        </summary>
+        <div class="sort-menu-items" role="menu" aria-label="並び替え">
+          <button type="button" role="menuitemradio" aria-checked="true" data-sort-value="archived-desc">記録日時の新しい順</button>
+          <button type="button" role="menuitemradio" aria-checked="false" data-sort-value="archived-asc">記録日時の古い順</button>
+          <button type="button" role="menuitemradio" aria-checked="false" data-sort-value="posted-desc">投稿日の新しい順</button>
+          <button type="button" role="menuitemradio" aria-checked="false" data-sort-value="posted-asc">投稿日の古い順</button>
+          <button type="button" role="menuitemradio" aria-checked="false" data-sort-value="title-asc">タイトル順</button>
+          <button type="button" role="menuitemradio" aria-checked="false" data-sort-value="creator-asc">作者名順</button>
+          <button type="button" role="menuitemradio" aria-checked="false" data-sort-value="size-desc">サイズの大きい順</button>
+        </div>
+      </details>
       <details id="theme-menu" class="theme-menu">
         <summary id="theme-toggle" aria-haspopup="menu" aria-label="表示テーマを選択">
           <svg data-theme-current-icon viewBox="0 0 24 24" aria-hidden="true">

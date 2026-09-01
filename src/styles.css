@@ -98,7 +98,17 @@ input { min-width: 320px; padding: 11px; border: 1px solid var(--border-strong);
 .search-box kbd { position: absolute; top: 50%; right: 11px; min-width: 18px; padding: 1px 3px; border: 1px solid var(--border-strong); border-radius: 4px; color: var(--muted); background: var(--surface-muted); font: 11px/1.35 system-ui, sans-serif; text-align: center; transform: translateY(-50%); pointer-events: none; }
 .search-box:focus-within kbd, .search-box:has(input:not(:placeholder-shown)) kbd { opacity: 0; }
 .search-box:focus-within { color: #0096fa; }
-.sort-select { box-sizing: border-box; height: 40px; padding: 0 12px; border: 1px solid var(--border-strong); border-radius: 8px; color: var(--text); background: var(--input); cursor: pointer; }
+.sort-menu { position: relative; }
+#sort-toggle { display: flex; align-items: center; gap: 8px; box-sizing: border-box; height: 40px; padding: 0 12px; border: 1px solid var(--border-strong); border-radius: 8px; color: var(--text); background: var(--input); cursor: pointer; list-style: none; white-space: nowrap; }
+#sort-toggle::-webkit-details-marker { display: none; }
+#sort-toggle:hover, .sort-menu[open] #sort-toggle { border-color: #0096fa; }
+#sort-toggle:focus-visible { outline: 2px solid #0096fa; outline-offset: 2px; }
+#sort-toggle svg { flex: 0 0 auto; width: 16px; height: 16px; color: var(--muted); fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.sort-menu-items { position: absolute; z-index: 6; top: calc(100% + 8px); left: 0; display: grid; box-sizing: border-box; width: 220px; padding: 6px; border: 1px solid var(--border-strong); border-radius: 12px; background: var(--surface-raised); box-shadow: 0 14px 36px var(--shadow); }
+.sort-menu-items button { display: grid; grid-template-columns: minmax(0, 1fr) 18px; align-items: center; gap: 10px; width: 100%; padding: 11px 10px; border-radius: 6px; color: var(--muted); background: transparent; font-size: 13px; text-align: left; }
+.sort-menu-items button:hover { color: var(--text); background: var(--surface-muted); }
+.sort-menu-items button[aria-checked="true"] { color: var(--text); }
+.sort-menu-items button[aria-checked="true"]::after { justify-self: center; width: 8px; height: 4px; border-bottom: 2px solid #0096fa; border-left: 2px solid #0096fa; content: ""; transform: translateY(-1px) rotate(-45deg); }
 .toolbar { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
 .archive-include-images { display: flex; align-items: center; box-sizing: border-box; height: 40px; gap: 7px; padding: 0 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); font-size: 13px; font-weight: 600; cursor: pointer; }
 .folder-access { border: 1px solid rgb(0 150 250 / 38%); color: #0096fa; background: rgb(0 150 250 / 10%); font-size: 12px; font-weight: 600; }
@@ -320,13 +330,15 @@ dialog::backdrop { background: var(--overlay); backdrop-filter: blur(4px); }
   box-shadow: none;
 }
 .archive-page .toolbar > button:hover, .archive-page #theme-toggle:hover { background: var(--control); }
-.archive-page .search-box input, .archive-page .sort-select {
+.archive-page .search-box input, .archive-page #sort-toggle {
   height: 44px;
   border: 0;
   border-radius: 28px;
   background: var(--control);
 }
-.archive-page .sort-select { padding: 0 16px; }
+.archive-page #sort-toggle { padding: 0 16px; }
+.archive-page #sort-toggle:hover, .archive-page .sort-menu[open] #sort-toggle { background: var(--control-hover); }
+.archive-page .sort-menu-items { border: 0; border-radius: 18px; box-shadow: none; }
 .archive-page .context-bar { margin-top: 28px; }
 .archive-page .tag-filter {
   height: 32px;

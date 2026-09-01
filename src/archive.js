@@ -22,7 +22,9 @@ import {
 const themeButton = document.querySelector("#theme-toggle");
 const themeMenu = document.querySelector("#theme-menu");
 const searchInput = document.querySelector("#search");
-const sortSelect = document.querySelector("#sort-select");
+const sortMenu = document.querySelector("#sort-menu");
+const sortToggle = document.querySelector("#sort-toggle");
+const sortToggleLabel = document.querySelector("#sort-toggle-label");
 const tagFilters = document.querySelector("#tag-filters");
 let selectedTheme = await initTheme(themeButton);
 updateThemeOptions();
@@ -38,6 +40,24 @@ themeMenu.addEventListener("click", async (event) => {
 function updateThemeOptions() {
   themeMenu.querySelectorAll("[data-theme-value]").forEach((option) => {
     option.setAttribute("aria-checked", String(option.dataset.themeValue === selectedTheme));
+  });
+}
+
+sortMenu.addEventListener("click", (event) => {
+  const option = event.target.closest("[data-sort-value]");
+  if (!option) return;
+  sortOrder = option.dataset.sortValue;
+  updateSortOptions();
+  sortMenu.removeAttribute("open");
+  sortToggle.focus();
+  applyFilters();
+});
+
+function updateSortOptions() {
+  sortMenu.querySelectorAll("[data-sort-value]").forEach((option) => {
+    const checked = option.dataset.sortValue === sortOrder;
+    option.setAttribute("aria-checked", String(checked));
+    if (checked) sortToggleLabel.textContent = option.textContent;
   });
 }
 
@@ -63,7 +83,8 @@ let visibleWorks = works;
 let searchQuery = "";
 const activeTags = new Set();
 let favoriteOnly = false;
-let sortOrder = sortSelect.value;
+let sortOrder = "archived-desc";
+updateSortOptions();
 const selectedIds = new Set();
 
 function compareDates(a, b, direction) {
@@ -124,10 +145,6 @@ searchInput.addEventListener("input", (event) => {
   searchQuery = event.target.value.trim().toLocaleLowerCase();
   applyFilters();
 });
-sortSelect.addEventListener("change", () => {
-  sortOrder = sortSelect.value;
-  applyFilters();
-});
 document.querySelector("#close").addEventListener("click", () => archiveViewer.close());
 document.querySelector("#close-metadata").addEventListener("click", () => metadataViewer.close());
 document.querySelector("#open-shortcuts").addEventListener("click", () => shortcutsDialog.showModal());
@@ -146,6 +163,7 @@ document.querySelector("#usage-consent-agree").addEventListener("click", async (
 
 document.addEventListener("click", (event) => {
   if (themeMenu.open && !themeMenu.contains(event.target)) themeMenu.removeAttribute("open");
+  if (sortMenu.open && !sortMenu.contains(event.target)) sortMenu.removeAttribute("open");
   document.querySelectorAll(".card-menu[open]").forEach((menu) => {
     if (!menu.contains(event.target)) menu.removeAttribute("open");
   });
@@ -161,6 +179,12 @@ document.addEventListener("keydown", (event) => {
     event.preventDefault();
     themeMenu.removeAttribute("open");
     themeButton.focus();
+    return;
+  }
+  if (event.key === "Escape" && sortMenu.open) {
+    event.preventDefault();
+    sortMenu.removeAttribute("open");
+    sortToggle.focus();
     return;
   }
   if (event.key === "Escape" && event.target.matches("#search")) {
