@@ -286,7 +286,7 @@ dialog::backdrop { background: var(--overlay); backdrop-filter: blur(4px); }
 
 /* Gallery UI experiment */
 :root {
-  --gallery-viewer-width: clamp(520px, 46vw, 840px);
+  --gallery-viewer-width: clamp(560px, 56vw, 960px);
   --gallery-action: #fff;
   --gallery-action-text: #000;
 }
@@ -430,6 +430,8 @@ html.viewer-open .page-links { right: calc(var(--gallery-viewer-width) + 20px); 
 html.viewer-open .selection-actions { left: calc((100vw - var(--gallery-viewer-width)) / 2); }
 #viewer-content {
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
   height: 100%;
   max-height: none;
   margin: 0;
@@ -437,22 +439,23 @@ html.viewer-open .selection-actions { left: calc((100vw - var(--gallery-viewer-w
   overflow: auto;
   scrollbar-gutter: stable;
 }
-#viewer-content .viewer-heading { display: block; padding-right: 48px; }
+#viewer-content .viewer-heading { flex: 0 0 auto; display: block; padding-right: 48px; }
 #viewer-content .viewer-heading h2 { margin: 0; font-size: 24px; line-height: 1.18; }
 #viewer-content .viewer-creator { margin: 8px 0 0; color: var(--muted); font-size: 14px; }
 #viewer-content .viewer-source { margin-top: 12px; }
 #viewer-content .viewer-source a { max-width: none; color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
 .viewer-stage {
   display: grid;
-  min-height: calc(100dvh - 236px);
+  flex: 1 1 auto;
+  min-height: 0;
   margin-top: 28px;
-  padding: 20px;
+  padding: 18px;
   place-items: center;
   border-radius: 28px;
   color: var(--muted);
   background: var(--surface-muted);
 }
-.viewer-stage > img { display: block; max-width: 100%; max-height: calc(100dvh - 276px); margin: 0; object-fit: contain; }
+.viewer-stage > img { display: block; max-width: 100%; max-height: 100%; margin: 0; object-fit: contain; }
 .viewer-controls {
   position: sticky;
   bottom: -1px;
@@ -479,7 +482,7 @@ html.viewer-open .selection-actions { left: calc((100vw - var(--gallery-viewer-w
   .archive-page .card-menu { opacity: 1; pointer-events: auto; transform: none; }
 }
 @media (max-width: 1100px) {
-  :root { --gallery-viewer-width: min(76vw, 760px); }
+  :root { --gallery-viewer-width: min(82vw, 820px); }
   html.viewer-open .archive-page { padding-right: 36px; }
   html.viewer-open .archive-page::after { position: fixed; z-index: 9; inset: 0; background: rgb(0 0 0 / 35%); content: ""; }
   html.viewer-open .page-links { right: 20px; }
@@ -492,6 +495,5 @@ html.viewer-open .selection-actions { left: calc((100vw - var(--gallery-viewer-w
   .archive-page .toolbar > * { flex: 1 1 auto; }
   :root { --gallery-viewer-width: 100vw; }
   #viewer-content { padding: 24px 18px; }
-  .viewer-stage { min-height: calc(100dvh - 220px); padding: 12px; }
-  .viewer-stage > img { max-height: calc(100dvh - 250px); }
+  .viewer-stage { padding: 12px; }
 }
