@@ -135,7 +135,7 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     workId.textContent = `ID: ${work.id}`;
     source.append(workId);
     const sourceUrl = sourceUrlFor(work);
-    if (sourceUrl) source.append(externalLink("元作品を開く", sourceUrl));
+    if (sourceUrl) source.append(externalLink("作品ページを開く", sourceUrl));
     heading.append(title, creator, source);
     return heading;
   }

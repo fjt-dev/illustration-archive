@@ -465,6 +465,7 @@ html.viewer-open .selection-actions { left: calc((100vw - var(--gallery-viewer-w
   background: var(--surface);
 }
 .viewer-controls button { border-radius: 28px; background: var(--control); }
+.viewer-controls button:first-child { justify-self: start; }
 .viewer-controls button:last-child { justify-self: end; }
 .viewer-controls span { color: var(--muted); font-size: 13px; }
 #close { top: 24px; right: 24px; border-radius: 50%; }
