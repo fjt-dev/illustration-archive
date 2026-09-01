@@ -363,7 +363,7 @@ function card(work) {
     checkbox.dispatchEvent(new Event("change"));
   };
   article.addEventListener("click", (event) => {
-    if (event.target.closest(".select-work, .card-menu, a, button, input")) return;
+    if (event.target.closest(".thumb, .select-work, .card-menu, a, button, input")) return;
     toggleSelection();
   });
   article.addEventListener("keydown", (event) => {
@@ -414,7 +414,22 @@ function card(work) {
       alert(error.message);
     }
   });
-  article.querySelector(".thumb-content").addEventListener("dblclick", () => archiveViewer.showImages(work, { fullscreen: true }));
+  let thumbClickTimer = null;
+  const thumbContent = article.querySelector(".thumb-content");
+  thumbContent.addEventListener("click", () => {
+    if (thumbClickTimer) return;
+    thumbClickTimer = setTimeout(() => {
+      thumbClickTimer = null;
+      archiveViewer.showImages(work);
+    }, 220);
+  });
+  thumbContent.addEventListener("dblclick", () => {
+    if (thumbClickTimer) {
+      clearTimeout(thumbClickTimer);
+      thumbClickTimer = null;
+    }
+    archiveViewer.showImages(work, { fullscreen: true });
+  });
   article.querySelector("[data-delete]").addEventListener("click", async () => {
     if (!confirm(`「${work.title}」を一覧から削除しますか？\n外部フォルダーの画像ファイルは削除されません。`)) return;
     await deleteWork(work.id);
