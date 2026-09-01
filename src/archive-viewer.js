@@ -32,9 +32,24 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     setFullscreen(false);
     content.replaceChildren();
     document.documentElement.classList.remove("viewer-open");
+    activeStep = null;
     if (previousFocus instanceof HTMLElement && previousFocus.isConnected) previousFocus.focus();
     previousFocus = null;
   }
+
+  let activeStep = null;
+
+  document.addEventListener("keydown", (event) => {
+    if (panel.hidden || !activeStep) return;
+    if (event.target instanceof Element && event.target.matches("input, textarea, [contenteditable='true']")) return;
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      activeStep(1);
+    } else if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      activeStep(-1);
+    }
+  });
 
   async function loadStoredImage(work, index = 0) {
     return await getImage(work.id, index) || readArchiveImage(work, index);
@@ -61,13 +76,28 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     node.replaceChildren(thumbnail);
   }
 
-  async function showImages(work, { fullscreen = false } = {}) {
+  async function showImages(work, { fullscreen = false, works = null, index = -1, startAtEnd = false } = {}) {
     const token = ++renderToken;
     releaseObjectUrl();
     openViewer(fullscreen);
     const heading = createViewerHeading(work);
+
+    const goToAdjacentWork = (delta) => {
+      if (!works || index < 0) return false;
+      const targetIndex = index + (delta > 0 ? 1 : -1);
+      if (targetIndex < 0 || targetIndex >= works.length) return false;
+      showImages(works[targetIndex], {
+        fullscreen: panel.classList.contains("fullscreen"),
+        works,
+        index: targetIndex,
+        startAtEnd: delta < 0
+      });
+      return true;
+    };
+
     if (work.imageCount === 0) {
       content.replaceChildren(heading, createRecoveryPanel(work));
+      activeStep = (delta) => goToAdjacentWork(delta);
       return;
     }
 
@@ -99,9 +129,18 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
       }
     };
 
-    controls.previous.addEventListener("click", () => renderPage(controls.index - 1));
-    controls.next.addEventListener("click", () => renderPage(controls.index + 1));
-    await renderPage(0);
+    activeStep = (delta) => {
+      const nextPage = controls.index + delta;
+      if (nextPage >= 0 && nextPage < work.imageCount) {
+        renderPage(nextPage);
+        return;
+      }
+      goToAdjacentWork(delta);
+    };
+
+    controls.previous.addEventListener("click", () => activeStep(-1));
+    controls.next.addEventListener("click", () => activeStep(1));
+    await renderPage(startAtEnd ? work.imageCount - 1 : 0);
   }
 
   function createPageControls(count) {
@@ -119,12 +158,10 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
       setIndex(index) {
         state.index = index;
         status.textContent = `${index + 1} / ${count}`;
-        previous.disabled = index <= 0;
-        next.disabled = index >= count - 1;
       },
       setLoading(loading) {
-        previous.disabled = loading || state.index <= 0;
-        next.disabled = loading || state.index >= count - 1;
+        previous.disabled = loading;
+        next.disabled = loading;
       }
     };
     state.setIndex(0);

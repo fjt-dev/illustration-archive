@@ -259,6 +259,10 @@ document.querySelector("#choose-folder").addEventListener("click", async () => {
   }
 });
 
+function openWorkViewer(work, options = {}) {
+  archiveViewer.showImages(work, { ...options, works: visibleWorks, index: visibleWorks.indexOf(work) });
+}
+
 function applyFilters() {
   const availableTags = new Set(works.flatMap((work) => (work.tags || []).map(normalizeTag)));
   activeTags.forEach((tag) => { if (!availableTags.has(tag)) activeTags.delete(tag); });
@@ -370,7 +374,7 @@ function card(work) {
     if (event.target.closest(".card-menu, button, a, input, .select-work")) return;
     if (event.key === "Enter") {
       event.preventDefault();
-      archiveViewer.showImages(work);
+      openWorkViewer(work);
       return;
     }
     if (event.key === " ") {
@@ -420,7 +424,7 @@ function card(work) {
     if (thumbClickTimer) return;
     thumbClickTimer = setTimeout(() => {
       thumbClickTimer = null;
-      archiveViewer.showImages(work);
+      openWorkViewer(work);
     }, 220);
   });
   thumbContent.addEventListener("dblclick", () => {
@@ -428,7 +432,7 @@ function card(work) {
       clearTimeout(thumbClickTimer);
       thumbClickTimer = null;
     }
-    archiveViewer.showImages(work, { fullscreen: true });
+    openWorkViewer(work, { fullscreen: true });
   });
   article.querySelector("[data-delete]").addEventListener("click", async () => {
     if (!confirm(`「${work.title}」を一覧から削除しますか？\n外部フォルダーの画像ファイルは削除されません。`)) return;
