@@ -127,12 +127,13 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
         node.src = activeObjectUrl;
         stage.replaceChildren(node);
         controls.setIndex(index);
-      } catch {
-        if (token !== renderToken) return;
-        stage.replaceChildren(createRecoveryPanel(work));
-      } finally {
-        if (token === renderToken) controls.setLoading(false);
-      }
+} catch {
+  if (token !== renderToken) return;
+  controls.setIndex(index);
+  stage.replaceChildren(createRecoveryPanel(work));
+} finally {
+  if (token === renderToken) controls.setLoading(false);
+}
     };
 
     activeStep = (delta) => {
