@@ -338,7 +338,6 @@ dialog::backdrop { background: var(--overlay); backdrop-filter: blur(4px); }
 }
 .archive-page #sort-toggle { padding: 0 16px; }
 .archive-page #sort-toggle:hover, .archive-page .sort-menu[open] #sort-toggle { background: var(--control-hover); }
-.archive-page .sort-menu-items { border: 0; border-radius: 18px; box-shadow: none; }
 .archive-page .context-bar { margin-top: 28px; }
 .archive-page .tag-filter {
   height: 32px;
