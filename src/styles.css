@@ -109,6 +109,9 @@ input { min-width: 320px; padding: 11px; border: 1px solid var(--border-strong);
 .tag-filters[hidden] { display: none; }
 .tag-filters-scroll { display: flex; align-items: center; gap: 8px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
 .tag-filters-scroll::-webkit-scrollbar { display: none; }
+.tag-reset { flex: 0 0 auto; box-sizing: border-box; height: 32px; padding: 0 12px; border: 1px solid var(--border); border-radius: 999px; color: var(--muted); background: transparent; font-size: 12px; font-weight: 600; white-space: nowrap; cursor: pointer; transition: color 120ms ease, background 120ms ease, border-color 120ms ease; }
+.tag-reset:hover { color: var(--text); background: var(--control); border-color: var(--border-strong); }
+.tag-reset:focus-visible { outline: 2px solid #69bdff; outline-offset: 2px; }
 .tag-filter { flex: 0 0 auto; box-sizing: border-box; height: 40px; padding: 0 13px; border: 2px solid transparent; border-radius: 9px; color: white; font-size: 13px; font-weight: 700; line-height: 1; white-space: nowrap; transition: filter 120ms ease, border-color 120ms ease, transform 120ms ease; }
 .tag-filter:hover { filter: brightness(1.08); transform: translateY(-1px); }
 .tag-filter:focus-visible { outline: 2px solid #69bdff; outline-offset: 2px; }

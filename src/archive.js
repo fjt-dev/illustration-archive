@@ -65,6 +65,28 @@ const activeTags = new Set();
 let favoriteOnly = false;
 let sortOrder = sortSelect.value;
 const selectedIds = new Set();
+
+function compareDates(a, b, direction) {
+  const aTime = a ? new Date(a).getTime() : NaN;
+  const bTime = b ? new Date(b).getTime() : NaN;
+  const aValid = !Number.isNaN(aTime);
+  const bValid = !Number.isNaN(bTime);
+  if (!aValid && !bValid) return 0;
+  if (!aValid) return 1;
+  if (!bValid) return -1;
+  return direction === "desc" ? bTime - aTime : aTime - bTime;
+}
+
+const sortComparators = {
+  "archived-desc": (a, b) => compareDates(a.archivedAt, b.archivedAt, "desc"),
+  "archived-asc": (a, b) => compareDates(a.archivedAt, b.archivedAt, "asc"),
+  "posted-desc": (a, b) => compareDates(a.postedAt, b.postedAt, "desc"),
+  "posted-asc": (a, b) => compareDates(a.postedAt, b.postedAt, "asc"),
+  "title-asc": (a, b) => (a.title || "").localeCompare(b.title || "", "ja"),
+  "creator-asc": (a, b) => (a.creatorName || "").localeCompare(b.creatorName || "", "ja"),
+  "size-desc": (a, b) => (b.byteSize || 0) - (a.byteSize || 0)
+};
+
 applyFilters();
 const initialFolder = await getArchiveFolder();
 showFolderName(initialFolder);
@@ -276,27 +298,6 @@ function applyFilters() {
   render(visibleWorks);
 }
 
-function compareDates(a, b, direction) {
-  const aTime = a ? new Date(a).getTime() : NaN;
-  const bTime = b ? new Date(b).getTime() : NaN;
-  const aValid = !Number.isNaN(aTime);
-  const bValid = !Number.isNaN(bTime);
-  if (!aValid && !bValid) return 0;
-  if (!aValid) return 1;
-  if (!bValid) return -1;
-  return direction === "desc" ? bTime - aTime : aTime - bTime;
-}
-
-const sortComparators = {
-  "archived-desc": (a, b) => compareDates(a.archivedAt, b.archivedAt, "desc"),
-  "archived-asc": (a, b) => compareDates(a.archivedAt, b.archivedAt, "asc"),
-  "posted-desc": (a, b) => compareDates(a.postedAt, b.postedAt, "desc"),
-  "posted-asc": (a, b) => compareDates(a.postedAt, b.postedAt, "asc"),
-  "title-asc": (a, b) => (a.title || "").localeCompare(b.title || "", "ja"),
-  "creator-asc": (a, b) => (a.creatorName || "").localeCompare(b.creatorName || "", "ja"),
-  "size-desc": (a, b) => (b.byteSize || 0) - (a.byteSize || 0)
-};
-
 function render(items) {
   summary.textContent = `${works.length}作品・${formatBytes(works.reduce((sum, work) => sum + (work.byteSize || 0), 0))}`;
   renderTagFilters();
@@ -346,7 +347,19 @@ function renderTagFilters() {
   const scrollArea = document.createElement("div");
   scrollArea.className = "tag-filters-scroll";
   scrollArea.append(...buttons);
-  tagFilters.replaceChildren(favorite, scrollArea);
+  const children = [favorite, scrollArea];
+  if (activeTags.size > 0) {
+    const reset = document.createElement("button");
+    reset.type = "button";
+    reset.className = "tag-reset";
+    reset.textContent = "タグをリセット";
+    reset.addEventListener("click", () => {
+      activeTags.clear();
+      applyFilters();
+    });
+    children.push(reset);
+  }
+  tagFilters.replaceChildren(...children);
 }
 
 function popularTags() {
