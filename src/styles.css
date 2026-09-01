@@ -489,12 +489,25 @@ html.viewer-open .selection-actions { left: calc((100vw - var(--gallery-viewer-w
   padding: 10px 0 32px;
   background: var(--surface);
 }
-.viewer-controls button { border-radius: 28px; background: var(--control); }
-.viewer-pagination, .viewer-zoom { display: flex; align-items: center; gap: 8px; }
+.viewer-pagination, .viewer-zoom {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 6px;
+  border-radius: 28px;
+  background: #000;
+}
+.viewer-pagination button, .viewer-zoom button {
+  border-radius: 22px;
+  color: #fff;
+  background: transparent;
+}
+.viewer-pagination button:hover, .viewer-zoom button:hover { background: rgb(255 255 255 / 14%); }
+.viewer-pagination button:disabled, .viewer-zoom button:disabled { color: rgb(255 255 255 / 32%); background: transparent; opacity: 1; filter: none; }
 .viewer-zoom { display: none; }
-#viewer:not(.fullscreen) .viewer-pagination { flex: 1 1 auto; justify-content: space-between; }
+#viewer:not(.fullscreen) .viewer-controls { justify-content: center; }
 #viewer.fullscreen .viewer-zoom { display: flex; }
-.viewer-pagination span, .viewer-zoom output { min-width: 46px; color: var(--muted); font-size: 13px; text-align: center; }
+.viewer-pagination span, .viewer-zoom output { min-width: 46px; color: rgb(255 255 255 / 65%); font-size: 13px; text-align: center; }
 .viewer-zoom button { display: grid; width: 36px; height: 36px; padding: 0; place-items: center; font-size: 18px; line-height: 1; }
 #close { top: 24px; right: 24px; border-radius: 50%; }
 #viewer-fullscreen {
