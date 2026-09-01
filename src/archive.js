@@ -325,7 +325,10 @@ function renderTagFilters() {
     });
     return button;
   });
-  tagFilters.replaceChildren(favorite, ...buttons);
+  const scrollArea = document.createElement("div");
+  scrollArea.className = "tag-filters-scroll";
+  scrollArea.append(...buttons);
+  tagFilters.replaceChildren(favorite, scrollArea);
 }
 
 function popularTags() {

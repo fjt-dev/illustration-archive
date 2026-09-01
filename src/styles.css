@@ -104,14 +104,15 @@ input { min-width: 320px; padding: 11px; border: 1px solid var(--border-strong);
 .folder-access:hover { background: rgb(0 150 250 / 16%); }
 .context-bar { display: grid; box-sizing: border-box; min-height: 48px; max-width: 1200px; margin: 16px auto 0; }
 .context-bar > * { grid-area: 1 / 1; }
-.tag-filters { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 2px; overflow-x: auto; scrollbar-width: none; }
-.tag-filters::-webkit-scrollbar { display: none; }
+.tag-filters { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 2px; }
 .tag-filters[hidden] { display: none; }
+.tag-filters-scroll { display: flex; align-items: center; gap: 8px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.tag-filters-scroll::-webkit-scrollbar { display: none; }
 .tag-filter { flex: 0 0 auto; box-sizing: border-box; height: 40px; padding: 0 13px; border: 2px solid transparent; border-radius: 9px; color: white; font-size: 13px; font-weight: 700; line-height: 1; white-space: nowrap; transition: filter 120ms ease, border-color 120ms ease, transform 120ms ease; }
 .tag-filter:hover { filter: brightness(1.08); transform: translateY(-1px); }
 .tag-filter:focus-visible { outline: 2px solid #69bdff; outline-offset: 2px; }
 .tag-filter[aria-pressed="true"] { border-color: #69bdff; }
-.favorite-filter { position: sticky; left: 0; z-index: 1; background: #bd4d73; }
+.favorite-filter { background: #bd4d73; }
 .tag-color-0 { background: #7066b9; }
 .tag-color-1 { background: #aa705e; }
 .tag-color-2 { background: #668d50; }
