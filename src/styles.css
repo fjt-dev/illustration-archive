@@ -347,7 +347,7 @@ dialog::backdrop { background: var(--overlay); backdrop-filter: blur(4px); }
 .archive-page .tag-filter[aria-pressed="true"] { color: var(--bg); background: var(--text); }
 .archive-page .favorite-filter[aria-pressed="true"] { color: var(--danger); background: var(--danger-bg); }
 .archive-page .grid {
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 40px 28px;
   margin-top: 28px;
 }
