@@ -143,15 +143,6 @@ input { min-width: 320px; padding: 11px; border: 1px solid var(--border-strong);
 .theme-menu-items [data-theme-value="dark"] svg { fill: currentColor; stroke: none; }
 .theme-menu-items [data-theme-value="system"] svg path { fill: currentColor; stroke: none; }
 #folder-name { max-width: 180px; overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
-#choose-folder.guide-attention { position: relative; z-index: 4; animation: guide-attention 1.15s ease-out 3; }
-@keyframes guide-attention {
-  0% { box-shadow: 0 0 0 0 rgb(0 150 250 / 55%); }
-  65% { box-shadow: 0 0 0 8px rgb(0 150 250 / 0%); }
-  100% { box-shadow: 0 0 0 0 rgb(0 150 250 / 0%); }
-}
-@media (prefers-reduced-motion: reduce) {
-  #choose-folder.guide-attention { animation: none; outline: 3px solid #0096fa; outline-offset: 3px; }
-}
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; max-width: 1200px; margin: 22px auto; }
 .page-links { position: fixed; z-index: 2; right: 20px; bottom: 16px; display: flex; align-items: center; gap: 14px; padding: 4px 0 4px 8px; background: var(--bg); }
 .page-link { width: auto; margin: 0; padding: 0; border: 0; border-radius: 0; color: var(--muted); background: transparent; font-size: 12px; text-decoration: underline; text-underline-offset: 3px; }

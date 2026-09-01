@@ -87,7 +87,6 @@ document.querySelector("#image-consent-agree").addEventListener("click", async (
   await enableImageRecording();
   archiveIncludeImages.checked = true;
   imageRecordingConsent.close();
-  requestAnimationFrame(highlightChooseFolder);
 });
 
 const firstRunState = await getFirstRunState();
@@ -108,7 +107,6 @@ document.querySelector("#close-shortcuts").addEventListener("click", () => short
 document.querySelector("#open-guide").addEventListener("click", () => onboarding.showModal());
 document.querySelector("#onboarding-close").addEventListener("click", () => {
   onboarding.close();
-  highlightChooseFolder();
 });
 onboarding.addEventListener("close", () => completeOnboarding());
 usageConsent.addEventListener("cancel", (event) => event.preventDefault());
@@ -118,14 +116,6 @@ document.querySelector("#usage-consent-agree").addEventListener("click", async (
   onboarding.showModal();
 });
 
-function highlightChooseFolder() {
-  const button = document.querySelector("#choose-folder");
-  button.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
-  button.focus({ preventScroll: true });
-  button.classList.remove("guide-attention");
-  requestAnimationFrame(() => button.classList.add("guide-attention"));
-  setTimeout(() => button.classList.remove("guide-attention"), 3600);
-}
 document.addEventListener("click", (event) => {
   if (themeMenu.open && !themeMenu.contains(event.target)) themeMenu.removeAttribute("open");
   document.querySelectorAll(".card-menu[open]").forEach((menu) => {
