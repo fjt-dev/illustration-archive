@@ -59,7 +59,7 @@ const archiveViewer = createArchiveViewer(
 let works = await listWorks();
 let visibleWorks = works;
 let searchQuery = "";
-let activeTag = "";
+const activeTags = new Set();
 let favoriteOnly = false;
 const selectedIds = new Set();
 applyFilters();
@@ -259,15 +259,15 @@ document.querySelector("#choose-folder").addEventListener("click", async () => {
 });
 
 function applyFilters() {
-  if (activeTag && !works.some((work) => (work.tags || []).some((tag) => normalizeTag(tag) === activeTag))) {
-    activeTag = "";
-  }
+  const availableTags = new Set(works.flatMap((work) => (work.tags || []).map(normalizeTag)));
+  activeTags.forEach((tag) => { if (!availableTags.has(tag)) activeTags.delete(tag); });
   visibleWorks = works.filter((work) => {
     const searchable = [work.title, work.creatorName, ...(work.tags || [])]
       .join(" ")
       .toLocaleLowerCase();
     const matchesSearch = !searchQuery || searchable.includes(searchQuery);
-    const matchesTag = !activeTag || (work.tags || []).some((tag) => normalizeTag(tag) === activeTag);
+    const workTags = new Set((work.tags || []).map(normalizeTag));
+    const matchesTag = activeTags.size === 0 || [...activeTags].every((tag) => workTags.has(tag));
     const matchesFavorite = !favoriteOnly || work.favorite === true;
     return matchesSearch && matchesTag && matchesFavorite;
   });
@@ -285,10 +285,12 @@ function render(items) {
 function renderTagFilters() {
   const allTags = popularTags();
   const tags = allTags.slice(0, 10);
-  const selectedTag = allTags.find((tag) => tag.key === activeTag);
-  if (selectedTag && !tags.includes(selectedTag)) {
-    tags.splice(Math.max(0, tags.length - 1), 1, selectedTag);
-  }
+  const tagKeys = new Set(tags.map((tag) => tag.key));
+  allTags.forEach((tag) => {
+    if (!activeTags.has(tag.key) || tagKeys.has(tag.key)) return;
+    tags.push(tag);
+    tagKeys.add(tag.key);
+  });
   tagFilters.hidden = works.length === 0 || selectedIds.size > 0;
   if (works.length === 0) {
     tagFilters.replaceChildren();
@@ -311,9 +313,9 @@ function renderTagFilters() {
     button.type = "button";
     button.className = `tag-filter tag-color-${index % 8}`;
     button.textContent = `#${tag.label}`;
-    button.setAttribute("aria-pressed", String(activeTag === tag.key));
+    button.setAttribute("aria-pressed", String(activeTags.has(tag.key)));
     button.addEventListener("click", () => {
-      activeTag = activeTag === tag.key ? "" : tag.key;
+      activeTags.has(tag.key) ? activeTags.delete(tag.key) : activeTags.add(tag.key);
       applyFilters();
     });
     return button;
