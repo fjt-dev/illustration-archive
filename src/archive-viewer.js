@@ -119,8 +119,15 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
 
     let currentImage = null;
     const applyZoom = () => {
-      if (!currentImage) return;
-      currentImage.style.transform = controls.zoom > 1 ? `scale(${controls.zoom})` : "";
+      if (!currentImage || !currentImage.naturalWidth) return;
+      if (controls.zoom <= 1) {
+        currentImage.style.width = "";
+        currentImage.style.height = "";
+        return;
+      }
+      const fitWidth = Math.min(currentImage.naturalWidth, stage.clientWidth);
+      currentImage.style.width = `${Math.round(fitWidth * controls.zoom)}px`;
+      currentImage.style.height = "auto";
     };
     onFullscreenChange = (fullscreen) => {
       if (fullscreen) return;

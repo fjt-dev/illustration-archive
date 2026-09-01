@@ -467,7 +467,7 @@ html.viewer-open .selection-actions { left: calc((100vw - var(--gallery-viewer-w
   color: var(--muted);
   background: var(--surface-muted);
 }
-.viewer-stage > img { display: block; min-width: 0; min-height: 0; max-width: 100%; max-height: 100%; margin: 0; object-fit: contain; transition: transform 120ms ease; }
+.viewer-stage > img { display: block; min-width: 0; min-height: 0; max-width: 100%; max-height: 100%; margin: 0; object-fit: contain; transition: width 120ms ease; }
 #viewer.fullscreen .viewer-stage {
   display: block;
   flex: 0 0 auto;
