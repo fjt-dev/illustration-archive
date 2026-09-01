@@ -491,6 +491,9 @@ html.viewer-open .selection-actions { left: calc((100vw - var(--gallery-viewer-w
 }
 .viewer-controls button { border-radius: 28px; background: var(--control); }
 .viewer-pagination, .viewer-zoom { display: flex; align-items: center; gap: 8px; }
+.viewer-zoom { display: none; }
+#viewer:not(.fullscreen) .viewer-pagination { flex: 1 1 auto; justify-content: space-between; }
+#viewer.fullscreen .viewer-zoom { display: flex; }
 .viewer-pagination span, .viewer-zoom output { min-width: 46px; color: var(--muted); font-size: 13px; text-align: center; }
 .viewer-zoom button { display: grid; width: 36px; height: 36px; padding: 0; place-items: center; font-size: 18px; line-height: 1; }
 #close { top: 24px; right: 24px; border-radius: 50%; }

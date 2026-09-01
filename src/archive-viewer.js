@@ -9,6 +9,7 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
 
   function setFullscreen(fullscreen) {
     panel.classList.toggle("fullscreen", fullscreen);
+    onFullscreenChange?.(fullscreen);
     if (!fullscreenToggle) return;
     fullscreenToggle.setAttribute("aria-pressed", String(fullscreen));
     fullscreenToggle.setAttribute("aria-label", fullscreen ? "ドッキング表示に戻す" : "全画面表示にする");
@@ -33,11 +34,13 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     content.replaceChildren();
     document.documentElement.classList.remove("viewer-open");
     activeStep = null;
+    onFullscreenChange = null;
     if (previousFocus instanceof HTMLElement && previousFocus.isConnected) previousFocus.focus();
     previousFocus = null;
   }
 
   let activeStep = null;
+  let onFullscreenChange = null;
 
   document.addEventListener("keydown", (event) => {
     if (panel.hidden || !activeStep) return;
@@ -98,6 +101,7 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     if (work.imageCount === 0) {
       content.replaceChildren(heading, createRecoveryPanel(work));
       activeStep = (delta) => goToAdjacentWork(delta);
+      onFullscreenChange = null;
       return;
     }
 
@@ -117,6 +121,11 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     const applyZoom = () => {
       if (!currentImage) return;
       currentImage.style.transform = controls.zoom > 1 ? `scale(${controls.zoom})` : "";
+    };
+    onFullscreenChange = (fullscreen) => {
+      if (fullscreen) return;
+      controls.resetZoom();
+      applyZoom();
     };
 
     const renderPage = async (index) => {
