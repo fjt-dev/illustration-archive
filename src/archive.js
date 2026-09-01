@@ -22,6 +22,9 @@ import {
 const themeButton = document.querySelector("#theme-toggle");
 const themeMenu = document.querySelector("#theme-menu");
 const searchInput = document.querySelector("#search");
+const sortMenu = document.querySelector("#sort-menu");
+const sortToggle = document.querySelector("#sort-toggle");
+const sortToggleLabel = document.querySelector("#sort-toggle-label");
 const tagFilters = document.querySelector("#tag-filters");
 let selectedTheme = await initTheme(themeButton);
 updateThemeOptions();
@@ -40,22 +43,71 @@ function updateThemeOptions() {
   });
 }
 
+sortMenu.addEventListener("click", (event) => {
+  const option = event.target.closest("[data-sort-value]");
+  if (!option) return;
+  sortOrder = option.dataset.sortValue;
+  updateSortOptions();
+  sortMenu.removeAttribute("open");
+  sortToggle.focus();
+  applyFilters();
+});
+
+function updateSortOptions() {
+  sortMenu.querySelectorAll("[data-sort-value]").forEach((option) => {
+    const checked = option.dataset.sortValue === sortOrder;
+    option.setAttribute("aria-checked", String(checked));
+    if (checked) sortToggleLabel.textContent = option.textContent;
+  });
+}
+
 const grid = document.querySelector("#works");
 const summary = document.querySelector("#summary");
 const viewer = document.querySelector("#viewer");
+const metadataViewer = document.querySelector("#metadata-viewer");
 const onboarding = document.querySelector("#onboarding");
 const usageConsent = document.querySelector("#usage-consent");
 const shortcutsDialog = document.querySelector("#shortcuts-dialog");
 const archiveIncludeImages = document.querySelector("#archive-include-images");
 const imageRecordingConsent = document.querySelector("#image-recording-consent");
 const restoreFolderAccess = document.querySelector("#restore-folder-access");
-const archiveViewer = createArchiveViewer(viewer, document.querySelector("#viewer-content"));
+const archiveViewer = createArchiveViewer(
+  viewer,
+  document.querySelector("#viewer-content"),
+  metadataViewer,
+  document.querySelector("#metadata-content"),
+  document.querySelector("#viewer-fullscreen")
+);
 let works = await listWorks();
 let visibleWorks = works;
 let searchQuery = "";
-let activeTag = "";
+const activeTags = new Set();
 let favoriteOnly = false;
+let sortOrder = "archived-desc";
+updateSortOptions();
 const selectedIds = new Set();
+
+function compareDates(a, b, direction) {
+  const aTime = a ? new Date(a).getTime() : NaN;
+  const bTime = b ? new Date(b).getTime() : NaN;
+  const aValid = !Number.isNaN(aTime);
+  const bValid = !Number.isNaN(bTime);
+  if (!aValid && !bValid) return 0;
+  if (!aValid) return 1;
+  if (!bValid) return -1;
+  return direction === "desc" ? bTime - aTime : aTime - bTime;
+}
+
+const sortComparators = {
+  "archived-desc": (a, b) => compareDates(a.archivedAt, b.archivedAt, "desc"),
+  "archived-asc": (a, b) => compareDates(a.archivedAt, b.archivedAt, "asc"),
+  "posted-desc": (a, b) => compareDates(a.postedAt, b.postedAt, "desc"),
+  "posted-asc": (a, b) => compareDates(a.postedAt, b.postedAt, "asc"),
+  "title-asc": (a, b) => (a.title || "").localeCompare(b.title || "", "ja"),
+  "creator-asc": (a, b) => (a.creatorName || "").localeCompare(b.creatorName || "", "ja"),
+  "size-desc": (a, b) => (b.byteSize || 0) - (a.byteSize || 0)
+};
+
 applyFilters();
 const initialFolder = await getArchiveFolder();
 showFolderName(initialFolder);
@@ -80,7 +132,6 @@ document.querySelector("#image-consent-agree").addEventListener("click", async (
   await enableImageRecording();
   archiveIncludeImages.checked = true;
   imageRecordingConsent.close();
-  requestAnimationFrame(highlightChooseFolder);
 });
 
 const firstRunState = await getFirstRunState();
@@ -94,21 +145,13 @@ searchInput.addEventListener("input", (event) => {
   searchQuery = event.target.value.trim().toLocaleLowerCase();
   applyFilters();
 });
-document.querySelector("#close").addEventListener("click", () => viewer.close());
-viewer.addEventListener("click", (event) => {
-  const bounds = viewer.getBoundingClientRect();
-  const outsideViewer = event.clientX < bounds.left
-    || event.clientX > bounds.right
-    || event.clientY < bounds.top
-    || event.clientY > bounds.bottom;
-  if (outsideViewer) viewer.close();
-});
+document.querySelector("#close").addEventListener("click", () => archiveViewer.close());
+document.querySelector("#close-metadata").addEventListener("click", () => metadataViewer.close());
 document.querySelector("#open-shortcuts").addEventListener("click", () => shortcutsDialog.showModal());
 document.querySelector("#close-shortcuts").addEventListener("click", () => shortcutsDialog.close());
 document.querySelector("#open-guide").addEventListener("click", () => onboarding.showModal());
 document.querySelector("#onboarding-close").addEventListener("click", () => {
   onboarding.close();
-  highlightChooseFolder();
 });
 onboarding.addEventListener("close", () => completeOnboarding());
 usageConsent.addEventListener("cancel", (event) => event.preventDefault());
@@ -118,26 +161,30 @@ document.querySelector("#usage-consent-agree").addEventListener("click", async (
   onboarding.showModal();
 });
 
-function highlightChooseFolder() {
-  const button = document.querySelector("#choose-folder");
-  button.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
-  button.focus({ preventScroll: true });
-  button.classList.remove("guide-attention");
-  requestAnimationFrame(() => button.classList.add("guide-attention"));
-  setTimeout(() => button.classList.remove("guide-attention"), 3600);
-}
 document.addEventListener("click", (event) => {
   if (themeMenu.open && !themeMenu.contains(event.target)) themeMenu.removeAttribute("open");
+  if (sortMenu.open && !sortMenu.contains(event.target)) sortMenu.removeAttribute("open");
   document.querySelectorAll(".card-menu[open]").forEach((menu) => {
     if (!menu.contains(event.target)) menu.removeAttribute("open");
   });
 });
 document.addEventListener("keydown", (event) => {
   const editing = event.target.matches("input, textarea, [contenteditable='true']");
+  if (event.key === "Escape" && !viewer.hidden && !metadataViewer.open) {
+    event.preventDefault();
+    archiveViewer.close();
+    return;
+  }
   if (event.key === "Escape" && themeMenu.open) {
     event.preventDefault();
     themeMenu.removeAttribute("open");
     themeButton.focus();
+    return;
+  }
+  if (event.key === "Escape" && sortMenu.open) {
+    event.preventDefault();
+    sortMenu.removeAttribute("open");
+    sortToggle.focus();
     return;
   }
   if (event.key === "Escape" && event.target.matches("#search")) {
@@ -254,19 +301,24 @@ document.querySelector("#choose-folder").addEventListener("click", async () => {
   }
 });
 
+function openWorkViewer(work, options = {}) {
+  archiveViewer.showImages(work, { ...options, works: visibleWorks, index: visibleWorks.indexOf(work) });
+}
+
 function applyFilters() {
-  if (activeTag && !works.some((work) => (work.tags || []).some((tag) => normalizeTag(tag) === activeTag))) {
-    activeTag = "";
-  }
+  const availableTags = new Set(works.flatMap((work) => (work.tags || []).map(normalizeTag)));
+  activeTags.forEach((tag) => { if (!availableTags.has(tag)) activeTags.delete(tag); });
   visibleWorks = works.filter((work) => {
     const searchable = [work.title, work.creatorName, ...(work.tags || [])]
       .join(" ")
       .toLocaleLowerCase();
     const matchesSearch = !searchQuery || searchable.includes(searchQuery);
-    const matchesTag = !activeTag || (work.tags || []).some((tag) => normalizeTag(tag) === activeTag);
+    const workTags = new Set((work.tags || []).map(normalizeTag));
+    const matchesTag = activeTags.size === 0 || [...activeTags].every((tag) => workTags.has(tag));
     const matchesFavorite = !favoriteOnly || work.favorite === true;
     return matchesSearch && matchesTag && matchesFavorite;
   });
+  visibleWorks.sort(sortComparators[sortOrder] || sortComparators["archived-desc"]);
   render(visibleWorks);
 }
 
@@ -281,10 +333,12 @@ function render(items) {
 function renderTagFilters() {
   const allTags = popularTags();
   const tags = allTags.slice(0, 10);
-  const selectedTag = allTags.find((tag) => tag.key === activeTag);
-  if (selectedTag && !tags.includes(selectedTag)) {
-    tags.splice(Math.max(0, tags.length - 1), 1, selectedTag);
-  }
+  const tagKeys = new Set(tags.map((tag) => tag.key));
+  allTags.forEach((tag) => {
+    if (!activeTags.has(tag.key) || tagKeys.has(tag.key)) return;
+    tags.push(tag);
+    tagKeys.add(tag.key);
+  });
   tagFilters.hidden = works.length === 0 || selectedIds.size > 0;
   if (works.length === 0) {
     tagFilters.replaceChildren();
@@ -307,14 +361,29 @@ function renderTagFilters() {
     button.type = "button";
     button.className = `tag-filter tag-color-${index % 8}`;
     button.textContent = `#${tag.label}`;
-    button.setAttribute("aria-pressed", String(activeTag === tag.key));
+    button.setAttribute("aria-pressed", String(activeTags.has(tag.key)));
     button.addEventListener("click", () => {
-      activeTag = activeTag === tag.key ? "" : tag.key;
+      activeTags.has(tag.key) ? activeTags.delete(tag.key) : activeTags.add(tag.key);
       applyFilters();
     });
     return button;
   });
-  tagFilters.replaceChildren(favorite, ...buttons);
+  const scrollArea = document.createElement("div");
+  scrollArea.className = "tag-filters-scroll";
+  scrollArea.append(...buttons);
+  const children = [favorite, scrollArea];
+  if (activeTags.size > 0) {
+    const reset = document.createElement("button");
+    reset.type = "button";
+    reset.className = "tag-reset";
+    reset.textContent = "タグをリセット";
+    reset.addEventListener("click", () => {
+      activeTags.clear();
+      applyFilters();
+    });
+    children.push(reset);
+  }
+  tagFilters.replaceChildren(...children);
 }
 
 function popularTags() {
@@ -363,7 +432,7 @@ function card(work) {
     if (event.target.closest(".card-menu, button, a, input, .select-work")) return;
     if (event.key === "Enter") {
       event.preventDefault();
-      archiveViewer.showImages(work);
+      openWorkViewer(work);
       return;
     }
     if (event.key === " ") {
@@ -379,9 +448,6 @@ function card(work) {
   else sourceLink.hidden = true;
   const query = [work.id, work.title, work.creatorName].filter(Boolean).join(" ");
   article.querySelector("[data-google]").href = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
-  const viewButton = article.querySelector("[data-view]");
-  viewButton.textContent = work.imageCount === 0 ? "元画像を探す" : "画像を開く";
-  viewButton.addEventListener("click", () => archiveViewer.showImages(work));
   article.querySelector("[data-metadata]").addEventListener("click", async () => {
     const result = await chrome.runtime.sendMessage({
       type: "COMPLETE_WORK_METADATA",
@@ -410,7 +476,22 @@ function card(work) {
       alert(error.message);
     }
   });
-  article.querySelector(".thumb-content").addEventListener("click", () => archiveViewer.showImages(work));
+  let thumbClickTimer = null;
+  const thumbContent = article.querySelector(".thumb-content");
+  thumbContent.addEventListener("click", () => {
+    if (thumbClickTimer) return;
+    thumbClickTimer = setTimeout(() => {
+      thumbClickTimer = null;
+      openWorkViewer(work);
+    }, 220);
+  });
+  thumbContent.addEventListener("dblclick", () => {
+    if (thumbClickTimer) {
+      clearTimeout(thumbClickTimer);
+      thumbClickTimer = null;
+    }
+    openWorkViewer(work, { fullscreen: true });
+  });
   article.querySelector("[data-delete]").addEventListener("click", async () => {
     if (!confirm(`「${work.title}」を一覧から削除しますか？\n外部フォルダーの画像ファイルは削除されません。`)) return;
     await deleteWork(work.id);

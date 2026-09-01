@@ -99,6 +99,24 @@ export async function readArchiveImages(work) {
   return readArchiveImagesFromFolder(root, work);
 }
 
+export async function readArchiveImage(work, index = 0) {
+  const root = await getArchiveFolder();
+  if (!root) throw new Error("記録先フォルダーが選択されていません");
+  if (await root.queryPermission({ mode: "read" }) !== "granted") {
+    throw new Error("記録先フォルダーへのアクセス許可が必要です");
+  }
+  const directoryName = work.folderDirectoryName || safeName(`${work.id}_${work.title || "untitled"}`);
+  const directory = await root.getDirectoryHandle(directoryName);
+  const names = Array.isArray(work.imageFiles) && work.imageFiles.length
+    ? work.imageFiles
+    : await findImageFiles(directory);
+  const name = names[index];
+  if (!name) return null;
+  const handle = await directory.getFileHandle(name);
+  const blob = await handle.getFile();
+  return { index, blob, mimeType: blob.type, byteSize: blob.size };
+}
+
 export async function readArchiveImagesFromFolder(root, work) {
   if (await root.queryPermission({ mode: "read" }) !== "granted") {
     throw new Error("記録先フォルダーへのアクセス許可が必要です");

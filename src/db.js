@@ -104,6 +104,14 @@ export async function getImages(workId) {
   return images.sort((a, b) => a.index - b.index);
 }
 
+export async function getImage(workId, index = 0) {
+  const db = await openDb();
+  const tx = db.transaction(IMAGES, "readonly");
+  const image = await requestResult(tx.objectStore(IMAGES).get(`${workId}:${index}`));
+  db.close();
+  return image || null;
+}
+
 export async function deleteImages(workId) {
   const db = await openDb();
   const tx = db.transaction(IMAGES, "readwrite");

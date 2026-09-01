@@ -15,6 +15,21 @@
         <input id="search" type="search" placeholder="タイトル・作者・タグで検索">
         <kbd>/</kbd>
       </label>
+      <details id="sort-menu" class="sort-menu">
+        <summary id="sort-toggle" aria-haspopup="menu" aria-label="並び替え">
+          <span id="sort-toggle-label">記録日時の新しい順</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"></path></svg>
+        </summary>
+        <div class="sort-menu-items" role="menu" aria-label="並び替え">
+          <button type="button" role="menuitemradio" aria-checked="true" data-sort-value="archived-desc">記録日時の新しい順</button>
+          <button type="button" role="menuitemradio" aria-checked="false" data-sort-value="archived-asc">記録日時の古い順</button>
+          <button type="button" role="menuitemradio" aria-checked="false" data-sort-value="posted-desc">投稿日の新しい順</button>
+          <button type="button" role="menuitemradio" aria-checked="false" data-sort-value="posted-asc">投稿日の古い順</button>
+          <button type="button" role="menuitemradio" aria-checked="false" data-sort-value="title-asc">タイトル順</button>
+          <button type="button" role="menuitemradio" aria-checked="false" data-sort-value="creator-asc">作者名順</button>
+          <button type="button" role="menuitemradio" aria-checked="false" data-sort-value="size-desc">サイズの大きい順</button>
+        </div>
+      </details>
       <details id="theme-menu" class="theme-menu">
         <summary id="theme-toggle" aria-haspopup="menu" aria-label="表示テーマを選択">
           <svg data-theme-current-icon viewBox="0 0 24 24" aria-hidden="true">
@@ -56,7 +71,17 @@
     <a class="page-link" href="https://www.pixiv.net/bookmark.php" target="_blank" rel="noreferrer">pixivでブックマークを閲覧</a>
     <a class="page-link" href="https://github.com/fjt-dev/illustration-archive" target="_blank" rel="noreferrer">GitHub Repository</a>
   </nav>
-  <dialog id="viewer"><button id="close" aria-label="閉じる" title="閉じる"></button><div id="viewer-content"></div></dialog>
+  <aside id="viewer" aria-label="画像ビューワー" hidden>
+    <button id="viewer-fullscreen" type="button" aria-pressed="false" aria-label="全画面表示にする" title="全画面表示">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <g data-icon="expand"><path d="M8 4H4v4M16 4h4v4M8 20H4v-4M16 20h4v-4"></path></g>
+        <g data-icon="compress"><path d="M9 4v4H5M15 4v4h4M9 20v-4H5M15 20v-4h4"></path></g>
+      </svg>
+    </button>
+    <button id="close" aria-label="閉じる" title="閉じる"></button>
+    <div id="viewer-content"></div>
+  </aside>
+  <dialog id="metadata-viewer" class="metadata-dialog"><button id="close-metadata" aria-label="閉じる">閉じる</button><div id="metadata-content"></div></dialog>
   <dialog id="shortcuts-dialog" class="shortcuts-dialog">
     <h2>キーボードショートカット</h2>
     <dl>
@@ -109,20 +134,19 @@
         <button type="button" class="favorite-button" aria-pressed="false" aria-label="お気に入りに追加">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5 4.3 13A5.2 5.2 0 0 1 12 6a5.2 5.2 0 0 1 7.7 7Z"></path></svg>
         </button>
+        <details class="card-menu">
+          <summary aria-label="作品メニュー" title="メニュー"></summary>
+          <div class="card-menu-items">
+            <button data-metadata>メタデータを表示</button>
+            <a data-source target="_blank" rel="noreferrer">元ページを開く</a>
+            <a data-google target="_blank" rel="noreferrer">Googleで検索</a>
+            <button data-delete class="menu-delete">一覧から削除</button>
+          </div>
+        </details>
       </div>
       <div class="card-info">
         <div class="card-heading">
           <h2></h2>
-          <details class="card-menu">
-            <summary aria-label="作品メニュー" title="メニュー"></summary>
-            <div class="card-menu-items">
-              <button data-view>画像を開く</button>
-              <button data-metadata>メタデータを表示</button>
-              <a data-source target="_blank" rel="noreferrer">元ページを開く</a>
-              <a data-google target="_blank" rel="noreferrer">Googleで検索</a>
-              <button data-delete class="menu-delete">一覧から削除</button>
-            </div>
-          </details>
         </div>
         <p class="creator"></p>
         <p class="meta"></p>
