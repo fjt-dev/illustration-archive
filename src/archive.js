@@ -54,7 +54,8 @@ const archiveViewer = createArchiveViewer(
   viewer,
   document.querySelector("#viewer-content"),
   metadataViewer,
-  document.querySelector("#metadata-content")
+  document.querySelector("#metadata-content"),
+  document.querySelector("#viewer-fullscreen")
 );
 let works = await listWorks();
 let visibleWorks = works;
@@ -362,7 +363,7 @@ function card(work) {
     checkbox.dispatchEvent(new Event("change"));
   };
   article.addEventListener("click", (event) => {
-    if (event.target.closest(".thumb, .select-work, .card-menu, a, button, input")) return;
+    if (event.target.closest(".select-work, .card-menu, a, button, input")) return;
     toggleSelection();
   });
   article.addEventListener("keydown", (event) => {
@@ -413,7 +414,7 @@ function card(work) {
       alert(error.message);
     }
   });
-  article.querySelector(".thumb-content").addEventListener("click", () => archiveViewer.showImages(work));
+  article.querySelector(".thumb-content").addEventListener("dblclick", () => archiveViewer.showImages(work, { fullscreen: true }));
   article.querySelector("[data-delete]").addEventListener("click", async () => {
     if (!confirm(`「${work.title}」を一覧から削除しますか？\n外部フォルダーの画像ファイルは削除されません。`)) return;
     await deleteWork(work.id);

@@ -286,7 +286,7 @@ dialog::backdrop { background: var(--overlay); backdrop-filter: blur(4px); }
 
 /* Gallery UI experiment */
 :root {
-  --gallery-viewer-width: clamp(560px, 56vw, 960px);
+  --gallery-viewer-width: clamp(520px, 50vw, 880px);
   --gallery-action: #fff;
   --gallery-action-text: #000;
 }
@@ -424,6 +424,7 @@ dialog::backdrop { background: var(--overlay); backdrop-filter: blur(4px); }
   color: var(--text);
 }
 #viewer[hidden] { display: none; }
+#viewer.fullscreen { inset: 0; width: 100vw; border-left: 0; }
 html.viewer-open, html.viewer-open body { overflow: hidden; }
 html.viewer-open .archive-page { height: 100dvh; padding-right: calc(var(--gallery-viewer-width) + 36px); overflow-y: auto; }
 html.viewer-open .page-links { right: calc(var(--gallery-viewer-width) + 20px); }
@@ -439,7 +440,7 @@ html.viewer-open .selection-actions { left: calc((100vw - var(--gallery-viewer-w
   overflow: auto;
   scrollbar-gutter: stable;
 }
-#viewer-content .viewer-heading { flex: 0 0 auto; display: block; padding-right: 48px; }
+#viewer-content .viewer-heading { flex: 0 0 auto; display: block; padding-right: 84px; }
 #viewer-content .viewer-heading h2 { margin: 0; font-size: 24px; line-height: 1.18; }
 #viewer-content .viewer-creator { margin: 8px 0 0; color: var(--muted); font-size: 14px; }
 #viewer-content .viewer-source { margin-top: 12px; }
@@ -455,7 +456,17 @@ html.viewer-open .selection-actions { left: calc((100vw - var(--gallery-viewer-w
   color: var(--muted);
   background: var(--surface-muted);
 }
-.viewer-stage > img { display: block; max-width: 100%; max-height: 100%; margin: 0; object-fit: contain; }
+.viewer-stage > img { display: block; min-width: 0; min-height: 0; max-width: 100%; max-height: 100%; margin: 0; object-fit: contain; }
+#viewer.fullscreen .viewer-stage {
+  display: block;
+  flex: 0 0 auto;
+}
+#viewer.fullscreen .viewer-stage > img {
+  width: auto;
+  height: auto;
+  max-height: none;
+  margin: 0 auto;
+}
 .viewer-controls {
   position: sticky;
   bottom: -1px;
@@ -472,6 +483,31 @@ html.viewer-open .selection-actions { left: calc((100vw - var(--gallery-viewer-w
 .viewer-controls button:last-child { justify-self: end; }
 .viewer-controls span { color: var(--muted); font-size: 13px; }
 #close { top: 24px; right: 24px; border-radius: 50%; }
+#viewer-fullscreen {
+  position: absolute;
+  z-index: 2;
+  top: 24px;
+  right: 68px;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgb(255 255 255 / 8%);
+  border-radius: 50%;
+  color: var(--muted);
+  background: rgb(255 255 255 / 3%);
+  box-shadow: none;
+  transition: color 140ms ease, background 140ms ease, border-color 140ms ease, transform 140ms ease;
+}
+#viewer-fullscreen:hover { color: var(--text); background: var(--control); border-color: var(--border-strong); transform: scale(1.04); }
+#viewer-fullscreen:active { transform: scale(.96); }
+#viewer-fullscreen:focus { outline: none; }
+#viewer-fullscreen:focus-visible { outline: 2px solid #0096fa; outline-offset: 2px; }
+#viewer-fullscreen svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+#viewer-fullscreen [data-icon="compress"] { display: none; }
+#viewer-fullscreen[aria-pressed="true"] [data-icon="expand"] { display: none; }
+#viewer-fullscreen[aria-pressed="true"] [data-icon="compress"] { display: inline; }
 .metadata-dialog { width: min(760px, calc(100vw - 32px)); padding: 28px; overflow: auto; }
 #close-metadata { display: block; margin: 0 0 0 auto; border-radius: 28px; }
 #metadata-content h2 { margin: 4px 0 0; }
@@ -482,7 +518,7 @@ html.viewer-open .selection-actions { left: calc((100vw - var(--gallery-viewer-w
   .archive-page .card-menu { opacity: 1; pointer-events: auto; transform: none; }
 }
 @media (max-width: 1100px) {
-  :root { --gallery-viewer-width: min(82vw, 820px); }
+  :root { --gallery-viewer-width: min(78vw, 780px); }
   html.viewer-open .archive-page { padding-right: 36px; }
   html.viewer-open .archive-page::after { position: fixed; z-index: 9; inset: 0; background: rgb(0 0 0 / 35%); content: ""; }
   html.viewer-open .page-links { right: 20px; }

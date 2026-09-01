@@ -2,15 +2,25 @@ import { getImage } from "./db.js";
 import { readArchiveImage } from "./folder.js";
 import { formatBytes, formatDate, htmlToPlainText } from "./utils.js";
 
-export function createArchiveViewer(panel, content, metadataDialog, metadataContent) {
+export function createArchiveViewer(panel, content, metadataDialog, metadataContent, fullscreenToggle) {
   let activeObjectUrl = "";
   let renderToken = 0;
   let previousFocus = null;
 
-  function openViewer() {
+  function setFullscreen(fullscreen) {
+    panel.classList.toggle("fullscreen", fullscreen);
+    if (!fullscreenToggle) return;
+    fullscreenToggle.setAttribute("aria-pressed", String(fullscreen));
+    fullscreenToggle.setAttribute("aria-label", fullscreen ? "ドッキング表示に戻す" : "全画面表示にする");
+  }
+
+  fullscreenToggle?.addEventListener("click", () => setFullscreen(!panel.classList.contains("fullscreen")));
+
+  function openViewer(fullscreen = false) {
     const wasHidden = panel.hidden;
     previousFocus = wasHidden ? document.activeElement : previousFocus;
     panel.hidden = false;
+    setFullscreen(fullscreen);
     document.documentElement.classList.add("viewer-open");
     if (wasHidden) requestAnimationFrame(() => panel.querySelector("#close")?.focus());
   }
@@ -19,6 +29,7 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     renderToken += 1;
     releaseObjectUrl();
     panel.hidden = true;
+    setFullscreen(false);
     content.replaceChildren();
     document.documentElement.classList.remove("viewer-open");
     if (previousFocus instanceof HTMLElement && previousFocus.isConnected) previousFocus.focus();
@@ -50,10 +61,10 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     node.replaceChildren(thumbnail);
   }
 
-  async function showImages(work) {
+  async function showImages(work, { fullscreen = false } = {}) {
     const token = ++renderToken;
     releaseObjectUrl();
-    openViewer();
+    openViewer(fullscreen);
     const heading = createViewerHeading(work);
     if (work.imageCount === 0) {
       content.replaceChildren(heading, createRecoveryPanel(work));
