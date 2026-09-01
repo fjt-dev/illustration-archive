@@ -22,6 +22,7 @@ import {
 const themeButton = document.querySelector("#theme-toggle");
 const themeMenu = document.querySelector("#theme-menu");
 const searchInput = document.querySelector("#search");
+const sortSelect = document.querySelector("#sort-select");
 const tagFilters = document.querySelector("#tag-filters");
 let selectedTheme = await initTheme(themeButton);
 updateThemeOptions();
@@ -62,6 +63,7 @@ let visibleWorks = works;
 let searchQuery = "";
 const activeTags = new Set();
 let favoriteOnly = false;
+let sortOrder = sortSelect.value;
 const selectedIds = new Set();
 applyFilters();
 const initialFolder = await getArchiveFolder();
@@ -98,6 +100,10 @@ if (!firstRunState.hasUsageConsent) {
 
 searchInput.addEventListener("input", (event) => {
   searchQuery = event.target.value.trim().toLocaleLowerCase();
+  applyFilters();
+});
+sortSelect.addEventListener("change", () => {
+  sortOrder = sortSelect.value;
   applyFilters();
 });
 document.querySelector("#close").addEventListener("click", () => archiveViewer.close());
@@ -266,8 +272,30 @@ function applyFilters() {
     const matchesFavorite = !favoriteOnly || work.favorite === true;
     return matchesSearch && matchesTag && matchesFavorite;
   });
+  visibleWorks.sort(sortComparators[sortOrder] || sortComparators["archived-desc"]);
   render(visibleWorks);
 }
+
+function compareDates(a, b, direction) {
+  const aTime = a ? new Date(a).getTime() : NaN;
+  const bTime = b ? new Date(b).getTime() : NaN;
+  const aValid = !Number.isNaN(aTime);
+  const bValid = !Number.isNaN(bTime);
+  if (!aValid && !bValid) return 0;
+  if (!aValid) return 1;
+  if (!bValid) return -1;
+  return direction === "desc" ? bTime - aTime : aTime - bTime;
+}
+
+const sortComparators = {
+  "archived-desc": (a, b) => compareDates(a.archivedAt, b.archivedAt, "desc"),
+  "archived-asc": (a, b) => compareDates(a.archivedAt, b.archivedAt, "asc"),
+  "posted-desc": (a, b) => compareDates(a.postedAt, b.postedAt, "desc"),
+  "posted-asc": (a, b) => compareDates(a.postedAt, b.postedAt, "asc"),
+  "title-asc": (a, b) => (a.title || "").localeCompare(b.title || "", "ja"),
+  "creator-asc": (a, b) => (a.creatorName || "").localeCompare(b.creatorName || "", "ja"),
+  "size-desc": (a, b) => (b.byteSize || 0) - (a.byteSize || 0)
+};
 
 function render(items) {
   summary.textContent = `${works.length}作品・${formatBytes(works.reduce((sum, work) => sum + (work.byteSize || 0), 0))}`;
