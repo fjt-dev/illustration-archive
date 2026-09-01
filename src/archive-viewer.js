@@ -113,9 +113,17 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     const controls = createPageControls(work.imageCount, hasAdjacentWork);
     content.replaceChildren(heading, stage, controls.root);
 
+    let currentImage = null;
+    const applyZoom = () => {
+      if (!currentImage) return;
+      currentImage.style.transform = controls.zoom > 1 ? `scale(${controls.zoom})` : "";
+    };
+
     const renderPage = async (index) => {
       controls.setLoading(true);
       stage.textContent = "読み込み中…";
+      currentImage = null;
+      controls.resetZoom();
       releaseObjectUrl();
       try {
         const image = await loadStoredImage(work, index);
@@ -127,6 +135,8 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
         node.src = activeObjectUrl;
         stage.replaceChildren(node);
         controls.setIndex(index);
+        currentImage = node;
+        applyZoom();
       } catch {
         if (token !== renderToken) return;
         stage.replaceChildren(createRecoveryPanel(work));
@@ -146,6 +156,8 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
 
     controls.previous.addEventListener("click", () => activeStep(-1));
     controls.next.addEventListener("click", () => activeStep(1));
+    controls.zoomOut.addEventListener("click", () => { controls.setZoom(controls.zoom - 0.25); applyZoom(); });
+    controls.zoomIn.addEventListener("click", () => { controls.setZoom(controls.zoom + 0.25); applyZoom(); });
     await renderPage(startAtEnd ? work.imageCount - 1 : 0);
   }
 
@@ -159,8 +171,27 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     const next = document.createElement("button");
     next.type = "button";
     next.textContent = "次へ →";
+    const pagination = document.createElement("div");
+    pagination.className = "viewer-pagination";
+    pagination.append(previous, status, next);
+
+    const zoomOut = document.createElement("button");
+    zoomOut.type = "button";
+    zoomOut.textContent = "−";
+    zoomOut.setAttribute("aria-label", "縮小");
+    const zoomLabel = document.createElement("output");
+    const zoomIn = document.createElement("button");
+    zoomIn.type = "button";
+    zoomIn.textContent = "+";
+    zoomIn.setAttribute("aria-label", "拡大");
+    const zoomControls = document.createElement("div");
+    zoomControls.className = "viewer-zoom";
+    zoomControls.append(zoomOut, zoomLabel, zoomIn);
+
+    root.append(pagination, zoomControls);
+
     const state = {
-      root, previous, next, index: 0,
+      root, previous, next, zoomOut, zoomIn, index: 0, zoom: 1, loading: false,
       setIndex(index) {
         state.index = index;
         status.textContent = `${index + 1} / ${count}`;
@@ -168,16 +199,29 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
         next.disabled = index >= count - 1 && !canStepFurther(1);
       },
       setLoading(loading) {
+        state.loading = loading;
         if (loading) {
           previous.disabled = true;
           next.disabled = true;
+          zoomOut.disabled = true;
+          zoomIn.disabled = true;
           return;
         }
         state.setIndex(state.index);
+        state.setZoom(state.zoom);
+      },
+      resetZoom() {
+        state.setZoom(1);
+      },
+      setZoom(zoom) {
+        state.zoom = Math.min(3, Math.max(1, zoom));
+        zoomLabel.value = `${Math.round(state.zoom * 100)}%`;
+        zoomOut.disabled = state.loading || state.zoom <= 1;
+        zoomIn.disabled = state.loading || state.zoom >= 3;
       }
     };
+    state.resetZoom();
     state.setIndex(0);
-    root.append(previous, status, next);
     return state;
   }
 

@@ -459,15 +459,17 @@ html.viewer-open .selection-actions { left: calc((100vw - var(--gallery-viewer-w
   min-height: 0;
   margin-top: 28px;
   padding: 18px;
+  overflow: auto;
   place-items: center;
   border-radius: 28px;
   color: var(--muted);
   background: var(--surface-muted);
 }
-.viewer-stage > img { display: block; min-width: 0; min-height: 0; max-width: 100%; max-height: 100%; margin: 0; object-fit: contain; }
+.viewer-stage > img { display: block; min-width: 0; min-height: 0; max-width: 100%; max-height: 100%; margin: 0; object-fit: contain; transition: transform 120ms ease; }
 #viewer.fullscreen .viewer-stage {
   display: block;
   flex: 0 0 auto;
+  overflow: visible;
 }
 #viewer.fullscreen .viewer-stage > img {
   width: auto;
@@ -478,18 +480,19 @@ html.viewer-open .selection-actions { left: calc((100vw - var(--gallery-viewer-w
 .viewer-controls {
   position: sticky;
   bottom: 0;
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
   gap: 12px;
   margin: 18px 0 0;
   padding: 10px 0 32px;
   background: var(--surface);
 }
 .viewer-controls button { border-radius: 28px; background: var(--control); }
-.viewer-controls button:first-child { justify-self: start; }
-.viewer-controls button:last-child { justify-self: end; }
-.viewer-controls span { color: var(--muted); font-size: 13px; }
+.viewer-pagination, .viewer-zoom { display: flex; align-items: center; gap: 8px; }
+.viewer-pagination span, .viewer-zoom output { min-width: 46px; color: var(--muted); font-size: 13px; text-align: center; }
+.viewer-zoom button { display: grid; width: 36px; height: 36px; padding: 0; place-items: center; font-size: 18px; line-height: 1; }
 #close { top: 24px; right: 24px; border-radius: 50%; }
 #viewer-fullscreen {
   position: absolute;
