@@ -9,7 +9,6 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
 
   function setFullscreen(fullscreen) {
     panel.classList.toggle("fullscreen", fullscreen);
-    onFullscreenChange?.(fullscreen);
     if (!fullscreenToggle) return;
     fullscreenToggle.setAttribute("aria-pressed", String(fullscreen));
     fullscreenToggle.setAttribute("aria-label", fullscreen ? "ドッキング表示に戻す" : "全画面表示にする");
@@ -34,13 +33,11 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     content.replaceChildren();
     document.documentElement.classList.remove("viewer-open");
     activeStep = null;
-    onFullscreenChange = null;
     if (previousFocus instanceof HTMLElement && previousFocus.isConnected) previousFocus.focus();
     previousFocus = null;
   }
 
   let activeStep = null;
-  let onFullscreenChange = null;
 
   document.addEventListener("keydown", (event) => {
     if (panel.hidden || !activeStep) return;
@@ -101,7 +98,6 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     if (work.imageCount === 0) {
       content.replaceChildren(heading, createRecoveryPanel(work));
       activeStep = (delta) => goToAdjacentWork(delta);
-      onFullscreenChange = null;
       return;
     }
 
@@ -117,29 +113,9 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     const controls = createPageControls(work.imageCount, hasAdjacentWork);
     content.replaceChildren(heading, stage, controls.root);
 
-    let currentImage = null;
-    const applyZoom = () => {
-      if (!currentImage || !currentImage.naturalWidth) return;
-      if (controls.zoom <= 1) {
-        currentImage.style.width = "";
-        currentImage.style.height = "";
-        return;
-      }
-      const fitWidth = Math.min(currentImage.naturalWidth, stage.clientWidth);
-      currentImage.style.width = `${Math.round(fitWidth * controls.zoom)}px`;
-      currentImage.style.height = "auto";
-    };
-    onFullscreenChange = (fullscreen) => {
-      if (fullscreen) return;
-      controls.resetZoom();
-      applyZoom();
-    };
-
     const renderPage = async (index) => {
       controls.setLoading(true);
       stage.textContent = "読み込み中…";
-      currentImage = null;
-      controls.resetZoom();
       releaseObjectUrl();
       try {
         const image = await loadStoredImage(work, index);
@@ -151,8 +127,6 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
         node.src = activeObjectUrl;
         stage.replaceChildren(node);
         controls.setIndex(index);
-        currentImage = node;
-        applyZoom();
       } catch {
         if (token !== renderToken) return;
         stage.replaceChildren(createRecoveryPanel(work));
@@ -172,8 +146,6 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
 
     controls.previous.addEventListener("click", () => activeStep(-1));
     controls.next.addEventListener("click", () => activeStep(1));
-    controls.zoomOut.addEventListener("click", () => { controls.setZoom(controls.zoom - 0.25); applyZoom(); });
-    controls.zoomIn.addEventListener("click", () => { controls.setZoom(controls.zoom + 0.25); applyZoom(); });
     await renderPage(startAtEnd ? work.imageCount - 1 : 0);
   }
 
@@ -191,23 +163,10 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     pagination.className = "viewer-pagination";
     pagination.append(previous, status, next);
 
-    const zoomOut = document.createElement("button");
-    zoomOut.type = "button";
-    zoomOut.textContent = "−";
-    zoomOut.setAttribute("aria-label", "縮小");
-    const zoomLabel = document.createElement("output");
-    const zoomIn = document.createElement("button");
-    zoomIn.type = "button";
-    zoomIn.textContent = "+";
-    zoomIn.setAttribute("aria-label", "拡大");
-    const zoomControls = document.createElement("div");
-    zoomControls.className = "viewer-zoom";
-    zoomControls.append(zoomOut, zoomLabel, zoomIn);
-
-    root.append(pagination, zoomControls);
+    root.append(pagination);
 
     const state = {
-      root, previous, next, zoomOut, zoomIn, index: 0, zoom: 1, loading: false,
+      root, previous, next, index: 0, loading: false,
       setIndex(index) {
         state.index = index;
         status.textContent = `${index + 1} / ${count}`;
@@ -219,24 +178,11 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
         if (loading) {
           previous.disabled = true;
           next.disabled = true;
-          zoomOut.disabled = true;
-          zoomIn.disabled = true;
           return;
         }
         state.setIndex(state.index);
-        state.setZoom(state.zoom);
-      },
-      resetZoom() {
-        state.setZoom(1);
-      },
-      setZoom(zoom) {
-        state.zoom = Math.min(3, Math.max(1, zoom));
-        zoomLabel.value = `${Math.round(state.zoom * 100)}%`;
-        zoomOut.disabled = state.loading || state.zoom <= 1;
-        zoomIn.disabled = state.loading || state.zoom >= 3;
       }
     };
-    state.resetZoom();
     state.setIndex(0);
     return state;
   }

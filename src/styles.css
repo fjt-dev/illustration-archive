@@ -461,17 +461,15 @@ html.viewer-open .selection-actions { left: calc((100vw - var(--gallery-viewer-w
   min-height: 0;
   margin-top: 28px;
   padding: 18px;
-  overflow: auto;
   place-items: center;
   border-radius: 28px;
   color: var(--muted);
   background: var(--surface-muted);
 }
-.viewer-stage > img { display: block; min-width: 0; min-height: 0; max-width: 100%; max-height: 100%; margin: 0; object-fit: contain; transition: width 120ms ease; }
+.viewer-stage > img { display: block; min-width: 0; min-height: 0; max-width: 100%; max-height: 100%; margin: 0; object-fit: contain; }
 #viewer.fullscreen .viewer-stage {
   display: block;
   flex: 0 0 auto;
-  overflow: visible;
 }
 #viewer.fullscreen .viewer-stage > img {
   width: auto;
@@ -484,14 +482,14 @@ html.viewer-open .selection-actions { left: calc((100vw - var(--gallery-viewer-w
   bottom: 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   flex-wrap: wrap;
   gap: 12px;
   margin: 18px 0 0;
   padding: 10px 0 32px;
   background: var(--surface);
 }
-.viewer-pagination, .viewer-zoom {
+.viewer-pagination {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -499,19 +497,15 @@ html.viewer-open .selection-actions { left: calc((100vw - var(--gallery-viewer-w
   border-radius: 28px;
   background: #000;
 }
-.viewer-pagination button, .viewer-zoom button {
+.viewer-pagination button {
   padding: 7px 10px;
   border-radius: 22px;
   color: #fff;
   background: transparent;
 }
-.viewer-pagination button:hover, .viewer-zoom button:hover { background: rgb(255 255 255 / 14%); }
-.viewer-pagination button:disabled, .viewer-zoom button:disabled { color: rgb(255 255 255 / 32%); background: transparent; opacity: 1; filter: none; }
-.viewer-zoom { display: none; }
-#viewer:not(.fullscreen) .viewer-controls { justify-content: center; }
-#viewer.fullscreen .viewer-zoom { display: flex; }
-.viewer-pagination span, .viewer-zoom output { min-width: 46px; color: rgb(255 255 255 / 65%); font-size: 13px; text-align: center; }
-.viewer-zoom button { display: grid; width: 36px; height: 36px; padding: 0; place-items: center; font-size: 18px; line-height: 1; }
+.viewer-pagination button:hover { background: rgb(255 255 255 / 14%); }
+.viewer-pagination button:disabled { color: rgb(255 255 255 / 32%); background: transparent; opacity: 1; filter: none; }
+.viewer-pagination span { min-width: 46px; color: rgb(255 255 255 / 65%); font-size: 13px; text-align: center; }
 #close { top: 24px; right: 24px; border-radius: 50%; }
 #viewer-fullscreen {
   position: absolute;
