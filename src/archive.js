@@ -75,8 +75,7 @@ const archiveViewer = createArchiveViewer(
   viewer,
   document.querySelector("#viewer-content"),
   metadataViewer,
-  document.querySelector("#metadata-content"),
-  document.querySelector("#viewer-fullscreen")
+  document.querySelector("#metadata-content")
 );
 let works = await listWorks();
 let visibleWorks = works;
@@ -490,7 +489,7 @@ function card(work) {
       clearTimeout(thumbClickTimer);
       thumbClickTimer = null;
     }
-    openWorkViewer(work, { fullscreen: true });
+    openWorkViewer(work);
   });
   article.querySelector("[data-delete]").addEventListener("click", async () => {
     if (!confirm(`「${work.title}」を一覧から削除しますか？\n外部フォルダーの画像ファイルは削除されません。`)) return;
