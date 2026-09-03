@@ -2,25 +2,15 @@ import { getImage } from "./db.js";
 import { readArchiveImage } from "./folder.js";
 import { formatBytes, formatDate, htmlToPlainText } from "./utils.js";
 
-export function createArchiveViewer(panel, content, metadataDialog, metadataContent, fullscreenToggle) {
+export function createArchiveViewer(panel, content, metadataDialog, metadataContent) {
   let activeObjectUrl = "";
   let renderToken = 0;
   let previousFocus = null;
 
-  function setFullscreen(fullscreen) {
-    panel.classList.toggle("fullscreen", fullscreen);
-    if (!fullscreenToggle) return;
-    fullscreenToggle.setAttribute("aria-pressed", String(fullscreen));
-    fullscreenToggle.setAttribute("aria-label", fullscreen ? "ドッキング表示に戻す" : "全画面表示にする");
-  }
-
-  fullscreenToggle?.addEventListener("click", () => setFullscreen(!panel.classList.contains("fullscreen")));
-
-  function openViewer(fullscreen = false) {
+  function openViewer() {
     const wasHidden = panel.hidden;
     previousFocus = wasHidden ? document.activeElement : previousFocus;
     panel.hidden = false;
-    setFullscreen(fullscreen);
     document.documentElement.classList.add("viewer-open");
     if (wasHidden) requestAnimationFrame(() => panel.querySelector("#close")?.focus());
   }
@@ -29,7 +19,6 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     renderToken += 1;
     releaseObjectUrl();
     panel.hidden = true;
-    setFullscreen(false);
     content.replaceChildren();
     document.documentElement.classList.remove("viewer-open");
     activeStep = null;
@@ -76,10 +65,10 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     node.replaceChildren(thumbnail);
   }
 
-  async function showImages(work, { fullscreen = false, works = null, index = -1, startAtEnd = false } = {}) {
+  async function showImages(work, { works = null, index = -1, startAtEnd = false } = {}) {
     const token = ++renderToken;
     releaseObjectUrl();
-    openViewer(fullscreen);
+    openViewer();
     const heading = createViewerHeading(work);
 
     const goToAdjacentWork = (delta) => {
@@ -87,7 +76,6 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
       const targetIndex = index + (delta > 0 ? 1 : -1);
       if (targetIndex < 0 || targetIndex >= works.length) return false;
       showImages(works[targetIndex], {
-        fullscreen: panel.classList.contains("fullscreen"),
         works,
         index: targetIndex,
         startAtEnd: delta < 0
@@ -127,13 +115,13 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
         node.src = activeObjectUrl;
         stage.replaceChildren(node);
         controls.setIndex(index);
-} catch {
-  if (token !== renderToken) return;
-  controls.setIndex(index);
-  stage.replaceChildren(createRecoveryPanel(work));
-} finally {
-  if (token === renderToken) controls.setLoading(false);
-}
+      } catch {
+        if (token !== renderToken) return;
+        controls.setIndex(index);
+        stage.replaceChildren(createRecoveryPanel(work));
+      } finally {
+        if (token === renderToken) controls.setLoading(false);
+      }
     };
 
     activeStep = (delta) => {
@@ -155,16 +143,20 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     root.className = "viewer-controls";
     const previous = document.createElement("button");
     previous.type = "button";
-    previous.textContent = "← 前へ";
+    previous.setAttribute("aria-label", "前の画像");
+    previous.textContent = "←";
     const status = document.createElement("span");
     const next = document.createElement("button");
     next.type = "button";
-    next.textContent = "次へ →";
+    next.setAttribute("aria-label", "次の画像");
+    next.textContent = "→";
     const pagination = document.createElement("div");
     pagination.className = "viewer-pagination";
-    pagination.append(previous, status, next);
+    pagination.hidden = count <= 1;
+    pagination.append(status);
 
     root.append(pagination);
+    root.append(previous, next);
 
     const state = {
       root, previous, next, index: 0, loading: false,
@@ -195,7 +187,7 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     title.textContent = work.title;
     const creator = document.createElement("p");
     creator.className = "viewer-creator";
-    creator.textContent = work.creatorName || "作者不明";
+    creator.textContent = `作成者: ${work.creatorName || "作者不明"}`;
     const source = document.createElement("div");
     source.className = "viewer-source";
     const workId = document.createElement("span");
