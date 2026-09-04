@@ -157,10 +157,14 @@ function safeName(value) {
     .normalize("NFC")
     .replace(/[\u0000-\u001f\u007f\\/:*?"<>|]/g, "_")
     .replace(/\s+/g, " ")
-    .trim()
-    .replace(/[. ]+$/g, "");
-  const shortened = truncateUtf8(normalized || fallback, 240).replace(/[. ]+$/g, "");
+    .trim();
+  const safe = replaceUnsafeTrailingCharacters(normalized);
+  const shortened = replaceUnsafeTrailingCharacters(truncateUtf8(safe || fallback, 240));
   return shortened || fallback;
+}
+
+function replaceUnsafeTrailingCharacters(value) {
+  return value.replace(/[. ~]+$/g, "_");
 }
 
 function truncateUtf8(value, maxBytes) {
