@@ -164,7 +164,9 @@ function safeName(value) {
 }
 
 function replaceUnsafeTrailingCharacters(value) {
-  return value.replace(/[. ~]+$/g, "_");
+  return value
+    .replace(/[. ]+$/g, "")
+    .replace(/~+$/g, "_");
 }
 
 function truncateUtf8(value, maxBytes) {
