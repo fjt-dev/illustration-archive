@@ -85,6 +85,33 @@ let favoriteOnly = false;
 let sortOrder = "archived-desc";
 updateSortOptions();
 const selectedIds = new Set();
+const BATCH_SIZE = 36;
+let renderedCount = 0;
+let viewMode = (await chrome.storage.local.get("archiveViewMode")).archiveViewMode === "infinite"
+  ? "infinite" : "standard";
+const scrollFooter = document.querySelector("#scroll-footer");
+const scrollStatus = document.querySelector("#scroll-status");
+const loadMoreButton = document.querySelector("#load-more");
+const scrollObserver = new IntersectionObserver((entries) => {
+  if (entries.some((entry) => entry.isIntersecting)) appendNextBatch();
+}, { rootMargin: "600px 0px" });
+const thumbnailObserver = new IntersectionObserver((entries) => {
+  for (const entry of entries) {
+    if (!entry.isIntersecting) continue;
+    thumbnailObserver.unobserve(entry.target);
+    archiveViewer.loadThumbnail(entry.target.querySelector(".thumb-content"), entry.target.work);
+  }
+}, { rootMargin: "600px 0px" });
+loadMoreButton.addEventListener("click", appendNextBatch);
+document.querySelectorAll("[data-view-mode]").forEach((button) => {
+  button.addEventListener("click", () => {
+    if (viewMode === button.dataset.viewMode) return;
+    viewMode = button.dataset.viewMode;
+    render(visibleWorks, { reset: true });
+    chrome.storage.local.set({ archiveViewMode: viewMode }).catch(console.error);
+    window.scrollTo({ top: 0, behavior: "instant" });
+  });
+});
 
 function compareDates(a, b, direction) {
   const aTime = a ? new Date(a).getTime() : NaN;
@@ -318,15 +345,44 @@ function applyFilters() {
     return matchesSearch && matchesTag && matchesFavorite;
   });
   visibleWorks.sort(sortComparators[sortOrder] || sortComparators["archived-desc"]);
-  render(visibleWorks);
+  render(visibleWorks, { reset: true });
 }
 
-function render(items) {
+function render(items, { reset = false } = {}) {
   summary.textContent = `${works.length}作品・${formatBytes(works.reduce((sum, work) => sum + (work.byteSize || 0), 0))}`;
   renderTagFilters();
-  grid.replaceChildren(...items.map(card));
+  scrollObserver.disconnect();
+  thumbnailObserver.disconnect();
+  grid.classList.toggle("infinite-grid", viewMode === "infinite");
+  document.querySelectorAll("[data-view-mode]").forEach((button) => {
+    button.setAttribute("aria-pressed", String(button.dataset.viewMode === viewMode));
+  });
+  renderedCount = viewMode === "infinite"
+    ? Math.min(items.length, reset ? BATCH_SIZE : Math.max(BATCH_SIZE, renderedCount))
+    : items.length;
+  grid.replaceChildren(...items.slice(0, renderedCount).map(card));
+  updateScrollFooter();
   if (!items.length) grid.textContent = works.length ? "条件に一致する作品はありません。" : "記録済み作品はありません。";
   updateSelectionControls();
+}
+
+function updateScrollFooter() {
+  scrollFooter.hidden = viewMode !== "infinite" || visibleWorks.length === 0;
+  const hasMore = renderedCount < visibleWorks.length;
+  loadMoreButton.hidden = !hasMore;
+  scrollStatus.textContent = hasMore
+    ? `${visibleWorks.length}作品中 ${renderedCount}作品を表示`
+    : `${visibleWorks.length}作品をすべて表示しました`;
+  if (!scrollFooter.hidden && hasMore) scrollObserver.observe(loadMoreButton);
+}
+
+function appendNextBatch() {
+  if (viewMode !== "infinite" || renderedCount >= visibleWorks.length) return;
+  scrollObserver.disconnect();
+  const nextCount = Math.min(renderedCount + BATCH_SIZE, visibleWorks.length);
+  grid.append(...visibleWorks.slice(renderedCount, nextCount).map(card));
+  renderedCount = nextCount;
+  updateScrollFooter();
 }
 
 function renderTagFilters() {
@@ -467,7 +523,8 @@ function card(work) {
     updateFavoriteButton(favoriteButton, work);
     try {
       await updateWorkMetadata(work.id, { favorite: work.favorite });
-      applyFilters();
+      delete favoriteButton.dataset.saving;
+      if (favoriteOnly) applyFilters();
     } catch (error) {
       work.favorite = previous;
       delete favoriteButton.dataset.saving;
@@ -501,7 +558,10 @@ function card(work) {
   article.querySelectorAll(".card-menu-items a, .card-menu-items button").forEach((item) => {
     item.addEventListener("click", () => article.querySelector(".card-menu").removeAttribute("open"));
   });
-  archiveViewer.loadThumbnail(article.querySelector(".thumb-content"), work);
+  article.work = work;
+  article.title = `${work.title} — ${work.creatorName || "作者不明"}`;
+  if (viewMode === "infinite") thumbnailObserver.observe(article);
+  else archiveViewer.loadThumbnail(article.querySelector(".thumb-content"), work);
   return article;
 }
 

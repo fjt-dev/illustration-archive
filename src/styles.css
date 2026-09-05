@@ -380,7 +380,10 @@ dialog::backdrop { background: var(--overlay); backdrop-filter: blur(4px); }
 .archive-page article h2 { font-size: 16px; line-height: 1.2; }
 .archive-page .creator { margin-top: 7px; margin-bottom: 0; }
 .archive-page .meta { margin-top: 6px; margin-bottom: 0; font-size: 12px; }
-.archive-page .select-work { top: 12px; left: 12px; border-radius: 50%; box-shadow: none; }
+.archive-page .select-work { top: 12px; left: 12px; border-radius: 50%; box-shadow: none; opacity: 0; pointer-events: none; transition: opacity 120ms ease; }
+.archive-page article:hover .select-work,
+.archive-page article:focus-within .select-work,
+.archive-page article.selected .select-work { opacity: 1; pointer-events: auto; }
 .archive-page .select-work span { border-radius: 50%; }
 .archive-page .select-work input:checked + span { background: var(--text); }
 .archive-page .select-work input:checked + span::after { border-bottom-color: var(--bg); border-left-color: var(--bg); }
@@ -558,6 +561,7 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
 
 @media (hover: none) {
   .archive-page .card-menu { opacity: 1; pointer-events: auto; transform: none; }
+  .archive-page .select-work { opacity: 1; pointer-events: auto; }
 }
 @media (max-width: 1100px) {
   #viewer-content { padding: 0; }
@@ -577,3 +581,28 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
   .viewer-pagination { right: 136px; bottom: 24px; left: auto; font-size: 15px; }
   #close { top: 14px; right: 14px; width: 48px; height: 48px; font-size: 30px; }
 }
+
+/* Compact square tiles for progressive archive browsing. */
+.display-controls { display: flex; flex: 0 0 auto; align-items: center; justify-content: flex-end; gap: 8px; }
+.view-mode { display: flex; gap: 2px; padding: 3px; border-radius: 20px; background: var(--surface); }
+.view-mode button { display: grid; place-items: center; box-sizing: border-box; width: 36px; height: 36px; padding: 8px; border-radius: 18px; background: transparent; color: var(--muted); }
+.view-mode button svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.view-mode button:hover { background: var(--control-hover); }
+.view-mode button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+.view-mode button[aria-pressed="true"] { color: var(--bg); background: var(--text); }
+.archive-page .infinite-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 6px; }
+.archive-page .infinite-grid .thumb { border-radius: 6px; }
+.archive-page .infinite-grid .card-info { display: none; }
+.archive-page .infinite-grid .favorite-button { display: none; }
+.archive-page .infinite-grid article { min-width: 0; aspect-ratio: 1; }
+.archive-page .infinite-grid article.selected .thumb { outline-offset: -3px; }
+.scroll-footer { max-width: 1280px; margin: 28px auto; text-align: center; color: var(--muted); font-size: 13px; }
+.scroll-footer button { margin-top: 4px; }
+@media (max-width: 650px) {
+  .archive-page .infinite-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+  .view-mode button { flex: 1; }
+}
+
+.archive-page header > div:first-child { flex-shrink: 0; }
+
+.archive-page .page-links { max-width: calc(100vw - 40px); box-sizing: border-box; flex-wrap: wrap; justify-content: flex-end; gap: 8px 14px; }
