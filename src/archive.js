@@ -353,6 +353,8 @@ function render(items, { reset = false } = {}) {
   renderTagFilters();
   scrollObserver.disconnect();
   thumbnailObserver.disconnect();
+  // Return to the beginning before shrinking the grid and observing its footer again.
+  if (reset && viewMode === "infinite") window.scrollTo({ top: 0, behavior: "instant" });
   grid.classList.toggle("infinite-grid", viewMode === "infinite");
   document.querySelectorAll("[data-view-mode]").forEach((button) => {
     button.setAttribute("aria-pressed", String(button.dataset.viewMode === viewMode));
