@@ -5,7 +5,6 @@
   <header>
     <div><h1>記録済み作品</h1><p id="summary"></p></div>
     <div class="toolbar">
-      <button id="open-guide">使い方</button>
       <button id="choose-folder">記録先</button>
       <span id="folder-name">記録先: 未選択</span>
       <button id="restore-folder-access" class="folder-access" hidden>アクセスを再許可</button>
@@ -30,29 +29,39 @@
           <button type="button" role="menuitemradio" aria-checked="false" data-sort-value="size-desc">サイズの大きい順</button>
         </div>
       </details>
-      <details id="theme-menu" class="theme-menu">
-        <summary id="theme-toggle" aria-haspopup="menu" aria-label="表示テーマを選択">
-          <svg data-theme-current-icon viewBox="0 0 24 24" aria-hidden="true">
-            <g data-theme-shape="light"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></g>
-            <g data-theme-shape="dark"><path d="M20.2 15.2A8.5 8.5 0 0 1 8.8 3.8 8.5 8.5 0 1 0 20.2 15.2Z"></path></g>
-            <g data-theme-shape="system"><circle cx="12" cy="12" r="8"></circle><path d="M12 4a8 8 0 0 1 0 16Z"></path></g>
-          </svg>
-        </summary>
-        <div class="theme-menu-items" role="menu" aria-label="表示テーマ">
-          <button type="button" role="menuitemradio" data-theme-value="light">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
-            <span>ライトモード</span>
+      <div class="display-controls">
+        <div class="view-mode" role="group" aria-label="作品の表示モード">
+          <button type="button" data-view-mode="standard" aria-pressed="true" aria-label="通常表示" title="通常表示">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="7" height="10" rx="1"></rect><rect x="14" y="4" width="7" height="10" rx="1"></rect><path d="M3 18h7M14 18h7M3 21h4M14 21h4"></path></svg>
           </button>
-          <button type="button" role="menuitemradio" data-theme-value="dark">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 15.2A8.5 8.5 0 0 1 8.8 3.8 8.5 8.5 0 1 0 20.2 15.2Z"></path></svg>
-            <span>ダークモード</span>
-          </button>
-          <button type="button" role="menuitemradio" data-theme-value="system">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 4a8 8 0 0 1 0 16Z"></path></svg>
-            <span>デバイスのデフォルト</span>
+          <button type="button" data-view-mode="infinite" aria-pressed="false" aria-label="タイトル非表示" title="タイトル非表示">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg>
           </button>
         </div>
-      </details>
+        <details id="theme-menu" class="theme-menu">
+          <summary id="theme-toggle" aria-haspopup="menu" aria-label="表示テーマを選択">
+            <svg data-theme-current-icon viewBox="0 0 24 24" aria-hidden="true">
+              <g data-theme-shape="light"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></g>
+              <g data-theme-shape="dark"><path d="M20.2 15.2A8.5 8.5 0 0 1 8.8 3.8 8.5 8.5 0 1 0 20.2 15.2Z"></path></g>
+              <g data-theme-shape="system"><circle cx="12" cy="12" r="8"></circle><path d="M12 4a8 8 0 0 1 0 16Z"></path></g>
+            </svg>
+          </summary>
+          <div class="theme-menu-items" role="menu" aria-label="表示テーマ">
+            <button type="button" role="menuitemradio" data-theme-value="light">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+              <span>ライトモード</span>
+            </button>
+            <button type="button" role="menuitemradio" data-theme-value="dark">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 15.2A8.5 8.5 0 0 1 8.8 3.8 8.5 8.5 0 1 0 20.2 15.2Z"></path></svg>
+              <span>ダークモード</span>
+            </button>
+            <button type="button" role="menuitemradio" data-theme-value="system">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 4a8 8 0 0 1 0 16Z"></path></svg>
+              <span>デバイスのデフォルト</span>
+            </button>
+          </div>
+        </details>
+      </div>
     </div>
   </header>
   <div class="context-bar">
@@ -66,7 +75,12 @@
     </div>
   </div>
   <main id="works" class="grid"></main>
+  <div id="scroll-footer" class="scroll-footer" hidden>
+    <p id="scroll-status" role="status" aria-live="polite"></p>
+    <button id="load-more" type="button">もっと表示</button>
+  </div>
   <nav class="page-links" aria-label="関連リンク">
+    <button id="open-guide" class="page-link">使い方</button>
     <button id="open-shortcuts" class="page-link">ショートカット一覧</button>
     <a class="page-link" href="https://www.pixiv.net/bookmark.php" target="_blank" rel="noreferrer">pixivでブックマークを閲覧</a>
     <a class="page-link" href="https://github.com/fjt-dev/illustration-archive" target="_blank" rel="noreferrer">GitHub Repository</a>
@@ -117,7 +131,7 @@
       <li><span>4</span><div><strong>記録一覧で確認する</strong><p>検索や元作品を探すための機能を利用できます。</p></div></li>
     </ol>
     <p class="onboarding-tip"><strong>ヒント</strong> このページをブックマークすると便利です。</p>
-    <p class="onboarding-reopen">使い方は画面上部から再表示できます。</p>
+    <p class="onboarding-reopen">使い方は画面右下から再表示できます。</p>
     <button id="onboarding-close" class="primary">はじめる</button>
   </dialog>
   <template id="work-card-template">

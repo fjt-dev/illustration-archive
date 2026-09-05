@@ -55,7 +55,7 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
       node.textContent = "画像を読み込めません";
       return;
     }
-    if (!image) return;
+    if (!image || !node.isConnected) return;
     const url = URL.createObjectURL(image.blob);
     const thumbnail = new Image();
     thumbnail.alt = "";
