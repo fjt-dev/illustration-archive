@@ -9,6 +9,7 @@ import {
 } from "./folder.js";
 import { initTheme, setTheme } from "./theme.js";
 import { formatBytes } from "./utils.js";
+import { createArchiveCalendar, bindCalendarToggle } from "./archive-calendar.js";
 import { createArchiveViewer } from "./archive-viewer.js";
 import {
   completeOnboarding,
@@ -21,6 +22,13 @@ import {
 
 const themeButton = document.querySelector("#theme-toggle");
 const themeMenu = document.querySelector("#theme-menu");
+const moreMenu = document.querySelector("#more-menu");
+const moreToggle = document.querySelector("#more-toggle");
+moreMenu.addEventListener("click", (event) => {
+  if (!event.target.closest("[data-menu-close]")) return;
+  moreMenu.removeAttribute("open");
+  moreToggle.focus();
+}, true);
 const searchInput = document.querySelector("#search");
 const sortMenu = document.querySelector("#sort-menu");
 const sortToggle = document.querySelector("#sort-toggle");
@@ -75,13 +83,15 @@ const archiveViewer = createArchiveViewer(
   viewer,
   document.querySelector("#viewer-content"),
   metadataViewer,
-  document.querySelector("#metadata-content")
+  document.querySelector("#metadata-content"),
+  { createFavoriteButton }
 );
 let works = await listWorks();
 let visibleWorks = works;
 let searchQuery = "";
 const activeTags = new Set();
 let favoriteOnly = false;
+const savingFavorites = new Set();
 let sortOrder = "archived-desc";
 updateSortOptions();
 const selectedIds = new Set();
@@ -134,6 +144,8 @@ const sortComparators = {
   "size-desc": (a, b) => (b.byteSize || 0) - (a.byteSize || 0)
 };
 
+bindCalendarToggle(document.querySelector("#calendar-toggle"), document.querySelector("#archive-calendar"));
+const archiveCalendar = createArchiveCalendar(document.querySelector("#archive-calendar"), applyFilters);
 applyFilters();
 const initialFolder = await getArchiveFolder();
 showFolderName(initialFolder);
@@ -188,6 +200,7 @@ document.querySelector("#usage-consent-agree").addEventListener("click", async (
 });
 
 document.addEventListener("click", (event) => {
+  if (moreMenu.open && !moreMenu.contains(event.target)) moreMenu.removeAttribute("open");
   if (themeMenu.open && !themeMenu.contains(event.target)) themeMenu.removeAttribute("open");
   if (sortMenu.open && !sortMenu.contains(event.target)) sortMenu.removeAttribute("open");
   document.querySelectorAll(".card-menu[open]").forEach((menu) => {
@@ -195,7 +208,7 @@ document.addEventListener("click", (event) => {
   });
 });
 document.addEventListener("keydown", (event) => {
-  const editing = event.target.matches("input, textarea, [contenteditable='true']");
+  const editing = event.target.matches("input, textarea, select, [contenteditable='true']");
   if (event.key === "Escape" && !viewer.hidden && !metadataViewer.open) {
     event.preventDefault();
     archiveViewer.close();
@@ -205,6 +218,12 @@ document.addEventListener("keydown", (event) => {
     event.preventDefault();
     themeMenu.removeAttribute("open");
     themeButton.focus();
+    return;
+  }
+  if (event.key === "Escape" && moreMenu.open) {
+    event.preventDefault();
+    moreMenu.removeAttribute("open");
+    moreToggle.focus();
     return;
   }
   if (event.key === "Escape" && sortMenu.open) {
@@ -323,7 +342,7 @@ document.querySelector("#choose-folder").addEventListener("click", async () => {
     if (error.name !== "AbortError") alert(error.message);
   } finally {
     button.disabled = false;
-    button.textContent = "記録先";
+    button.textContent = "記録先を選ぶ";
   }
 });
 
@@ -344,6 +363,8 @@ function applyFilters() {
     const matchesFavorite = !favoriteOnly || work.favorite === true;
     return matchesSearch && matchesTag && matchesFavorite;
   });
+  archiveCalendar.update(visibleWorks);
+  visibleWorks = visibleWorks.filter(work => archiveCalendar.matches(work));
   visibleWorks.sort(sortComparators[sortOrder] || sortComparators["archived-desc"]);
   render(visibleWorks, { reset: true });
 }
@@ -389,7 +410,7 @@ function appendNextBatch() {
 
 function renderTagFilters() {
   const allTags = popularTags();
-  const tags = allTags.slice(0, 10);
+  const tags = allTags.slice(0, 20);
   const tagKeys = new Set(tags.map((tag) => tag.key));
   allTags.forEach((tag) => {
     if (!activeTags.has(tag.key) || tagKeys.has(tag.key)) return;
@@ -514,26 +535,7 @@ function card(work) {
     else if (result?.error) alert(result.error);
     archiveViewer.showMetadata(work);
   });
-  const favoriteButton = article.querySelector(".favorite-button");
-  updateFavoriteButton(favoriteButton, work);
-  favoriteButton.addEventListener("click", async (event) => {
-    event.stopPropagation();
-    if (favoriteButton.dataset.saving === "true") return;
-    const previous = work.favorite === true;
-    work.favorite = !previous;
-    favoriteButton.dataset.saving = "true";
-    updateFavoriteButton(favoriteButton, work);
-    try {
-      await updateWorkMetadata(work.id, { favorite: work.favorite });
-      delete favoriteButton.dataset.saving;
-      if (favoriteOnly) applyFilters();
-    } catch (error) {
-      work.favorite = previous;
-      delete favoriteButton.dataset.saving;
-      updateFavoriteButton(favoriteButton, work);
-      alert(error.message);
-    }
-  });
+  bindFavoriteButton(article.querySelector(".favorite-button"), work);
   let thumbClickTimer = null;
   const thumbContent = article.querySelector(".thumb-content");
   thumbContent.addEventListener("click", () => {
@@ -567,10 +569,56 @@ function card(work) {
   return article;
 }
 
+function createFavoriteButton(work) {
+  const button = document.querySelector("#work-card-template").content.querySelector(".favorite-button").cloneNode(true);
+  bindFavoriteButton(button, work);
+  return button;
+}
+
+function bindFavoriteButton(button, work) {
+  button.addEventListener("animationend", (event) => {
+    if (event.animationName === "favorite-burst") delete button.dataset.favoriteAnimation;
+  });
+  button.dataset.workId = String(work.id);
+  updateFavoriteButton(button, work);
+  button.addEventListener("click", async (event) => {
+    event.stopPropagation();
+    if (savingFavorites.has(work.id)) return;
+    const previous = work.favorite === true;
+    work.favorite = !previous;
+    savingFavorites.add(work.id);
+    syncFavoriteButtons(work);
+    if (work.favorite) {
+      button.dataset.favoriteAnimation = "true";
+    }
+    try {
+      await updateWorkMetadata(work.id, { favorite: work.favorite });
+      if (favoriteOnly) applyFilters();
+    } catch (error) {
+      work.favorite = previous;
+      alert(error.message);
+    } finally {
+      savingFavorites.delete(work.id);
+      syncFavoriteButtons(work);
+    }
+  });
+}
+
+function syncFavoriteButtons(work) {
+  document.querySelectorAll(".favorite-button").forEach((button) => {
+    if (button.dataset.workId === String(work.id)) updateFavoriteButton(button, work);
+  });
+}
+
 function updateFavoriteButton(button, work) {
   const favorite = work.favorite === true;
+  if (!favorite) delete button.dataset.favoriteAnimation;
+  button.setAttribute("aria-busy", String(savingFavorites.has(work.id)));
+  button.setAttribute("aria-disabled", String(savingFavorites.has(work.id)));
   button.setAttribute("aria-pressed", String(favorite));
-  button.setAttribute("aria-label", favorite ? "お気に入りから削除" : "お気に入りに追加");
+  const label = favorite ? "お気に入りから削除" : "お気に入りに追加";
+  button.setAttribute("aria-label", label);
+  button.title = label;
 }
 
 function showFolderName(handle) {
