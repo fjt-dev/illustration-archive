@@ -389,7 +389,7 @@ function appendNextBatch() {
 
 function renderTagFilters() {
   const allTags = popularTags();
-  const tags = allTags.slice(0, 10);
+  const tags = allTags.slice(0, 20);
   const tagKeys = new Set(tags.map((tag) => tag.key));
   allTags.forEach((tag) => {
     if (!activeTags.has(tag.key) || tagKeys.has(tag.key)) return;
