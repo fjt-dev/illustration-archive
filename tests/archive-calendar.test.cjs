@@ -24,7 +24,7 @@ function setup() {
     querySelector(selector) { return this.children.find(child => child.dataset.date === selector.match(/data-date="([^"]+)"/)?.[1]); }
     click() { this.focus(); this.listeners.click(); }
   }
-  context.document = { activeElement: null, createElement: () => new Element(), addEventListener() {} };
+  context.document = { activeElement: null, createElement: () => new Element(), listeners: {}, addEventListener(type, fn) { this.listeners[type] = fn; }, querySelector() { return null; } };
   vm.createContext(context); vm.runInContext(source, context);
   const nodes = Object.fromEntries(['field','month','days','status','clear','prev','next','today'].map(key => [key,new Element()]));
   const root = { querySelector(selector) { return nodes[selector.match(/data-calendar-(\w+)/)[1]]; } };
@@ -134,7 +134,7 @@ test('calendar starts collapsed, toggles with its title button, and Escape resto
   assert.equal(button.attributes['aria-expanded'],'true');
   button.click();assert.equal(panel.hidden,true);
   button.click();
-  panel.listeners.keydown({key:'Escape',preventDefault(){},stopPropagation(){}});
+  c.document.listeners.keydown({key:'Escape',preventDefault(){},stopPropagation(){}});
   assert.equal(panel.hidden,true);
   assert.equal(button.attributes['aria-expanded'],'false');
   assert.equal(c.document.activeElement,button);
@@ -168,4 +168,45 @@ test('hover and focus alone do not open calendar; outside clicks close it', () =
   outside({target:panel});assert.equal(panel.hidden,false);
   outside({target:button});assert.equal(panel.hidden,false);
   outside({target:{}});assert.equal(panel.hidden,true);
+});
+
+
+test('Escape outside calendar closes it without affecting hidden panels or foreground dialogs', () => {
+  const {context:c,nodes}=setup();
+  const button=nodes.today,panel=nodes.days;
+  c.bindCalendarToggle(button,panel);
+  const escape=()=>({key:'Escape',defaultPrevented:false,preventDefault(){this.defaultPrevented=true;}});
+  button.click();nodes.field.focus();
+  const event=escape();c.document.listeners.keydown(event);
+  assert.equal(panel.hidden,true);assert.equal(event.defaultPrevented,true);
+  assert.equal(c.document.activeElement,button);
+  nodes.field.focus();const hiddenEvent=escape();c.document.listeners.keydown(hiddenEvent);
+  assert.equal(hiddenEvent.defaultPrevented,false);assert.equal(c.document.activeElement,nodes.field);
+  button.click();c.document.querySelector=()=>({});
+  const dialogEvent=escape();c.document.listeners.keydown(dialogEvent);
+  assert.equal(panel.hidden,false);assert.equal(dialogEvent.defaultPrevented,false);
+  c.document.querySelector=()=>null;
+  const consumed=escape();consumed.defaultPrevented=true;c.document.listeners.keydown(consumed);
+  assert.equal(panel.hidden,false);
+});
+
+test('completing metadata immediately moves unknown dates into calendar counts and selected results', async () => {
+  const {context:c,nodes,root}=setup();
+  const work={id:'1',title:'test'};
+  let visible,handler,shown;
+  const calendar=c.createArchiveCalendar(root,()=>refresh());
+  function refresh() { calendar.update([work]);visible=[work].filter(calendar.matches); }
+  refresh();nodes.field.value='postedAt';nodes.field.listeners.change();
+  nodes.month.value='2024-02';nodes.month.listeners.change();
+  nodes.days.querySelector('[data-date="2024-02-29"]').click();
+  assert.equal(visible.length,0);assert(nodes.status.textContent.includes('日付不明 1件'));
+  const archive=readFileSync(require('node:path').join(__dirname,'../src/archive.js'),'utf8');
+  const handlerSource=archive.slice(archive.indexOf('  article.querySelector("[data-metadata]").addEventListener'),archive.indexOf('  bindFavoriteButton(article.querySelector'));
+  const state={work,article:{querySelector(){return {addEventListener(type,fn){handler=fn;}};}},
+    chrome:{runtime:{async sendMessage(){return {ok:true,metadata:{postedAt:'2024-02-29'}};}}},
+    applyFilters:refresh,archiveViewer:{showMetadata(value){shown=value;}},alert(){throw new Error('Unexpected error');}};
+  vm.createContext(state);vm.runInContext(handlerSource,state);await handler();
+  assert.equal(visible.length,1);assert.equal(shown,work);
+  assert.equal(nodes.days.querySelector('[data-date="2024-02-29"]').title,'1作品');
+  assert(!nodes.status.textContent.includes('日付不明'));
 });

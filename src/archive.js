@@ -208,6 +208,7 @@ document.addEventListener("click", (event) => {
   });
 });
 document.addEventListener("keydown", (event) => {
+  if (event.defaultPrevented) return;
   const editing = event.target.matches("input, textarea, select, [contenteditable='true']");
   if (event.key === "Escape" && !viewer.hidden && !metadataViewer.open) {
     event.preventDefault();
@@ -531,7 +532,10 @@ function card(work) {
       type: "COMPLETE_WORK_METADATA",
       workId: work.id
     });
-    if (result?.ok) Object.assign(work, result.metadata);
+    if (result?.ok) {
+      Object.assign(work, result.metadata);
+      applyFilters();
+    }
     else if (result?.error) alert(result.error);
     archiveViewer.showMetadata(work);
   });

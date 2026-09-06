@@ -166,15 +166,14 @@ export function bindCalendarToggle(button, panel) {
     button.setAttribute("aria-label", label);
     position();
   }
-  for (const target of [button, panel]) {
-    target.addEventListener("keydown", (event) => {
-      if (event.key !== "Escape" || event.defaultPrevented) return;
-      event.preventDefault();
-      event.stopPropagation();
-      button.focus();
-      setOpen(false);
-    });
-  }
+  document.addEventListener("keydown", (event) => {
+    if (panel.hidden || event.key !== "Escape" || event.defaultPrevented) return;
+    // Let a foreground dialog or image viewer handle Escape first.
+    if (document.querySelector("dialog[open], #viewer:not([hidden])")) return;
+    event.preventDefault();
+    button.focus();
+    setOpen(false);
+  });
   setOpen(false);
   button.addEventListener("click", () => setOpen(panel.hidden));
   document.addEventListener("pointerdown", (event) => {
