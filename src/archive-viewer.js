@@ -183,6 +183,20 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
   function createViewerHeading(work) {
     const heading = document.createElement("div");
     heading.className = "viewer-heading";
+    const trigger = document.createElement("button");
+    trigger.type = "button";
+    trigger.className = "viewer-heading-trigger";
+    const creatorName = work.creatorName || "作者不明";
+    trigger.setAttribute("aria-label", `作者: ${creatorName}。作品情報を表示`);
+    const icon = document.createElement("span");
+    icon.className = "viewer-heading-icon";
+    icon.setAttribute("aria-hidden", "true");
+    const label = document.createElement("span");
+    label.className = "viewer-heading-label";
+    label.textContent = `作者: ${creatorName}`;
+    trigger.append(icon, label);
+    const details = document.createElement("div");
+    details.className = "viewer-heading-details";
     const title = document.createElement("h2");
     title.textContent = work.title;
     const creator = document.createElement("p");
@@ -195,7 +209,8 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     source.append(workId);
     const sourceUrl = sourceUrlFor(work);
     if (sourceUrl) source.append(externalLink("作品ページを開く", sourceUrl));
-    heading.append(title, creator, source);
+    details.append(title, creator, source);
+    heading.append(trigger, details);
     return heading;
   }
 
