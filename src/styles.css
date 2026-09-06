@@ -474,8 +474,8 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
 }
 #viewer-content .viewer-heading-icon {
   flex: 0 0 auto;
-  width: 24px;
-  height: 24px;
+  width: 18px;
+  height: 18px;
   background: currentColor;
   -webkit-mask: url("../assets/info.png") center / contain no-repeat;
   mask: url("../assets/info.png") center / contain no-repeat;
