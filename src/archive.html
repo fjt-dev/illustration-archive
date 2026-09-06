@@ -3,19 +3,17 @@
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="styles.css"><title>記録済み作品</title></head>
 <body class="archive-page">
   <header>
-    <div>
-      <div class="archive-title-row">
-        <h1>記録済み作品</h1>
-      </div>
-      <p id="summary"></p>
-    </div>
+    <div><h1>記録済み作品</h1><p id="summary"></p></div>
     <div class="toolbar">
+      <button id="choose-folder">記録先</button>
+      <span id="folder-name">記録先: 未選択</span>
+      <button id="restore-folder-access" class="folder-access" hidden>アクセスを再許可</button>
+      <label class="archive-include-images"><span>画像を含める</span><input id="archive-include-images" type="checkbox" role="switch"></label>
       <label class="search-box">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg>
         <input id="search" type="search" placeholder="タイトル・作者・タグで検索">
         <kbd>/</kbd>
       </label>
-      <div class="sort-calendar-controls">
       <details id="sort-menu" class="sort-menu">
         <summary id="sort-toggle" aria-haspopup="menu" aria-label="並び替え">
           <span id="sort-toggle-label">記録日時の新しい順</span>
@@ -31,10 +29,6 @@
           <button type="button" role="menuitemradio" aria-checked="false" data-sort-value="size-desc">サイズの大きい順</button>
         </div>
       </details>
-        <button id="calendar-toggle" type="button" aria-label="カレンダーを開く" aria-expanded="false" aria-controls="archive-calendar">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"></rect><path d="M7 3v4M17 3v4M3 10h18M7 14h2M12 14h2M7 17h2M12 17h2"></path></svg>
-        </button>
-      </div>
       <div class="display-controls">
         <div class="view-mode" role="group" aria-label="作品の表示モード">
           <button type="button" data-view-mode="standard" aria-pressed="true" aria-label="通常表示" title="通常表示">
@@ -44,19 +38,6 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg>
           </button>
         </div>
-        <details id="more-menu" class="more-menu">
-          <summary id="more-toggle" aria-label="設定とヘルプ" title="設定とヘルプ">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="19" cy="12" r="1.8"></circle></svg>
-          </summary>
-          <div class="more-menu-panel">
-            <section class="more-menu-group" aria-label="記録の設定">
-              <h2>記録の設定</h2>
-      <button id="choose-folder">記録先を選ぶ</button>
-      <span id="folder-name">記録先: 未選択</span>
-      <button id="restore-folder-access" class="folder-access" hidden>アクセスを再許可</button>
-      <label class="archive-include-images"><span>画像を含める</span><input id="archive-include-images" type="checkbox" role="switch"></label>
-            </section>
-            <section class="more-menu-group" aria-label="表示の設定">
         <details id="theme-menu" class="theme-menu">
           <summary id="theme-toggle" aria-haspopup="menu" aria-label="表示テーマを選択">
             <svg data-theme-current-icon viewBox="0 0 24 24" aria-hidden="true">
@@ -64,7 +45,6 @@
               <g data-theme-shape="dark"><path d="M20.2 15.2A8.5 8.5 0 0 1 8.8 3.8 8.5 8.5 0 1 0 20.2 15.2Z"></path></g>
               <g data-theme-shape="system"><circle cx="12" cy="12" r="8"></circle><path d="M12 4a8 8 0 0 1 0 16Z"></path></g>
             </svg>
-            <span>表示テーマ</span>
           </summary>
           <div class="theme-menu-items" role="menu" aria-label="表示テーマ">
             <button type="button" role="menuitemradio" data-theme-value="light">
@@ -81,17 +61,6 @@
             </button>
           </div>
         </details>
-            </section>
-            <section class="more-menu-group" aria-label="ヘルプとリンク">
-              <h2>ヘルプとリンク</h2>
-
-    <button id="open-guide" class="more-action" data-menu-close>使い方</button>
-    <button id="open-shortcuts" class="more-action" data-menu-close>ショートカット一覧</button>
-    <a class="more-action" data-menu-close href="https://www.pixiv.net/bookmark.php" target="_blank" rel="noreferrer">pixivでブックマークを閲覧</a>
-    <a class="more-action" data-menu-close href="https://github.com/fjt-dev/illustration-archive" target="_blank" rel="noreferrer">GitHub Repository</a>
-              </section>
-          </div>
-        </details>
       </div>
     </div>
   </header>
@@ -105,38 +74,17 @@
       </div>
     </div>
   </div>
-  <section id="archive-calendar" class="archive-calendar" aria-label="作品カレンダー" hidden>
-    <div class="calendar-body">
-      <div class="calendar-month-nav">
-        <input type="month" data-calendar-month min="1000-01" max="9999-12" aria-label="表示する月">
-        <button type="button" data-calendar-prev aria-label="前の月">←</button>
-        <button type="button" data-calendar-next aria-label="次の月">→</button>
-        <button type="button" data-calendar-today>今月</button>
-      </div>
-      <div class="calendar-toolbar">
-        <span class="calendar-beta">Beta</span>
-        <select data-calendar-field aria-label="集計する日付"><option value="archivedAt">追加日（記録日）</option><option value="postedAt">イラスト投稿日</option></select>
-        <p data-calendar-status class="calendar-status" role="status"></p>
-      </div>
-      <div class="calendar-weekdays" aria-hidden="true"><span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span></div>
-      <div data-calendar-days class="calendar-days" role="group" aria-label="日付で作品を絞り込み"></div>
-      <div class="calendar-footer">
-        <div class="calendar-legend" aria-label="丸が大きく濃いほど作品が多い"><span>少</span><i></i><i></i><i></i><i></i><i></i><span>多</span></div>
-        <details class="calendar-help">
-          <summary aria-label="カレンダーの見方">?</summary>
-          <p>丸は月内の作品数を5段階で表します。四角い枠は選択日、下線は今日です。日付を押すと一覧を絞り込めます。</p>
-          <p>検索・タグ・お気に入りの条件を反映し、1作品を1件として端末の時刻で集計します。日付不明の作品は丸の集計に含めません。</p>
-        </details>
-      </div>
-      <button type="button" data-calendar-clear hidden>日付の絞り込みを解除</button>
-    </div>
-  </section>
   <main id="works" class="grid"></main>
   <div id="scroll-footer" class="scroll-footer" hidden>
     <p id="scroll-status" role="status" aria-live="polite"></p>
     <button id="load-more" type="button">もっと表示</button>
   </div>
-
+  <nav class="page-links" aria-label="関連リンク">
+    <button id="open-guide" class="page-link">使い方</button>
+    <button id="open-shortcuts" class="page-link">ショートカット一覧</button>
+    <a class="page-link" href="https://www.pixiv.net/bookmark.php" target="_blank" rel="noreferrer">pixivでブックマークを閲覧</a>
+    <a class="page-link" href="https://github.com/fjt-dev/illustration-archive" target="_blank" rel="noreferrer">GitHub Repository</a>
+  </nav>
   <aside id="viewer" aria-label="画像ビューワー" hidden>
     <button id="close" aria-label="閉じる"><span aria-hidden="true">×</span></button>
     <div id="viewer-content"></div>
@@ -183,7 +131,7 @@
       <li><span>4</span><div><strong>記録一覧で確認する</strong><p>検索や元作品を探すための機能を利用できます。</p></div></li>
     </ol>
     <p class="onboarding-tip"><strong>ヒント</strong> このページをブックマークすると便利です。</p>
-    <p class="onboarding-reopen">使い方は上部の「⋯」メニューから再表示できます。</p>
+    <p class="onboarding-reopen">使い方は画面右下から再表示できます。</p>
     <button id="onboarding-close" class="primary">はじめる</button>
   </dialog>
   <template id="work-card-template">
