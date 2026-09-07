@@ -1,5 +1,7 @@
 # Illustration Archive
 
+English | [日本語](./README.ja.md)
+
 > A browser extension that records liked (bookmarked) artworks in a local folder
 
 Illustration Archive records artwork images and metadata in a folder you choose. It does not use a proprietary external server.
@@ -95,13 +97,13 @@ Recording the same artwork again replaces files with the same names. Deleting an
 
 ## Keyboard shortcuts
 
-| Key                    | Action                                           |
-| ---------------------- | ------------------------------------------------ |
-| `/`                    | Focus the search box                             |
-| `Cmd + A` / `Ctrl + A` | Select all visible artworks                      |
-| `Esc`                  | Clear selection or close an open menu or viewer  |
-| `Enter`                | Open the focused artwork in the viewer           |
-| `←` / `→`              | Move between pages and artworks in the viewer    |
+| Key                    | Action                                          |
+| ---------------------- | ----------------------------------------------- |
+| `/`                    | Focus the search box                            |
+| `Cmd + A` / `Ctrl + A` | Select all visible artworks                     |
+| `Esc`                  | Clear selection or close an open menu or viewer |
+| `Enter`                | Open the focused artwork in the viewer          |
+| `←` / `→`              | Move between pages and artworks in the viewer   |
 
 ## Permissions
 
