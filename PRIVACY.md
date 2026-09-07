@@ -1,28 +1,30 @@
-# プライバシーポリシー
+# Privacy Policy
 
-Illustration Archiveは、ユーザーがブックマークしたpixiv作品のメタデータと画像を、ユーザー自身が選択したフォルダーへ記録します。
+Illustration Archive records metadata and images from pixiv artworks bookmarked by the user in a folder selected by the user.
 
-## 取得・記録する情報
+[日本語](PRIVACY.ja.md)
 
-- pixivの作品ID、タイトル、作者名、作者ID、タグ、説明、投稿日、元URL、元画像URLとファイル名
-- 作品画像（「画像を含める」を有効にした場合のみ）
-- 拡張機能のテーマ設定、利用上の注意、自動記録と画像記録の同意状態、記録先フォルダーへのアクセスハンドル
+## Information collected and recorded
 
-作品画像は「画像を含める」を有効にした場合のみ選択されたフォルダーへ記録され、一覧表示に必要なメタデータはブラウザ内へ保持されます。初期設定では作品画像を取得せず、記録先フォルダーが未選択でもメタデータを記録できます。
+- pixiv artwork ID, title, artist name, artist ID, tags, description, post date, source URL, original image URLs, and filenames
+- Artwork images (only when **Include images** is enabled)
+- Extension theme settings, acceptance of the usage notice, consent state for automatic and image recording, and the access handle for the archive folder
 
-メタデータのみの自動記録は、pixiv作品ページに既に埋め込まれている情報を使用します。ブックマーク状態を再確認するための追加通信や自動再試行は行いません。「画像を含める」を有効にした場合のみ、作品画像の記録に必要な情報と画像をpixivから取得します。
+Artwork images are recorded in the selected folder only when **Include images** is enabled. Metadata needed to display the archive is stored in the browser. By default, artwork images are not retrieved, and metadata can be recorded without selecting an archive folder.
 
-## 外部送信
+Metadata-only automatic recording uses information already embedded in pixiv artwork pages. It does not make additional requests or automatically retry to reconfirm bookmark status. Information needed to record images, and the images themselves, are retrieved from pixiv only when **Include images** is enabled.
 
-本拡張機能は独自の外部サーバーや解析サービスを使用しません。作品情報と画像を第三者へ送信しません。ユーザーが「Googleで検索」を選んだ場合に限り、作品ID、タイトル、作者名を含む検索語がGoogleへ送信されます。
+## External transmission
 
-## 権限
+This extension does not use a proprietary external server or analytics service. It does not send artwork information or images to third parties. Only when the user selects **Search with Google** is a search query containing the artwork ID, title, and artist name sent to Google.
 
-- `storage`: テーマ設定、記録先識別情報、作品一覧のメタデータを保持するため
-- `scripting`: 拡張機能更新時、開いているpixiv作品ページへ自動記録処理を接続するため
-- `declarativeNetRequestWithHostAccess`: pixiv画像サーバーから作品画像を取得するために必要なRefererを設定するため
-- `www.pixiv.net` / `i.pximg.net`: 作品情報と作品画像を取得するため
+## Permissions
 
-## データの削除
+- `storage`: Stores theme settings, archive-folder identifiers, and artwork metadata used by the archive.
+- `scripting`: Connects automatic recording behavior to open pixiv artwork pages when the extension is updated.
+- `declarativeNetRequestWithHostAccess`: Sets the Referer required to retrieve artwork images from pixiv's image server.
+- `www.pixiv.net` / `i.pximg.net`: Retrieves artwork information and artwork images.
 
-記録一覧の削除操作はブラウザ内の一覧データを削除します。外部フォルダーへ記録された画像は誤削除防止のため自動削除せず、ユーザーがファイル管理アプリから削除します。
+## Data deletion
+
+Deleting an artwork from the archive removes its browser-stored archive data. To prevent accidental data loss, image files recorded in an external folder are not deleted automatically; users can delete those files with their file manager.

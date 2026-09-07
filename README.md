@@ -1,124 +1,126 @@
 # Illustration Archive
 
-> いいね（ブックマーク）した作品をローカルフォルダーへ記録するブラウザ拡張機能
+English | [日本語](./README.ja.md)
 
-作品の画像とメタデータを、ユーザーが選択したフォルダーへ記録します。独自の外部サーバーは使用しません。
+> A browser extension that records liked (bookmarked) artworks in a local folder
 
-## 主な機能
+Illustration Archive records artwork images and metadata in a folder you choose. It does not use a proprietary external server.
 
-- `metadata.json` を中心とした作品情報の記録
-- オプションによる作品画像の記録
-- 任意のフォルダーや外付けストレージへの記録
-- 作品の手動記録
-- タイトル・作者・タグによる検索
-- 記録日時・投稿日・タイトル・作者名・サイズによる並び替え
-- 複数タグを組み合わせた絞り込み
-- お気に入りのフィルター表示
-- 右側ドッキング表示と全画面表示を切り替えられる画像ビューワー
-- 矢印キーによる、作品をまたいだ連続閲覧
-- 記録した元画像URLとファイル名を使った検索支援
-- 複数作品の選択と一覧からの一括削除
-- ライトモードとダークモード
+## Features
 
-## 動作環境
+- Records artwork information centered around `metadata.json`
+- Optionally records artwork images
+- Supports any folder or external storage device
+- Manually records artworks
+- Searches by title, artist, and tag
+- Sorts by archive date, post date, title, artist name, or size
+- Filters by multiple tags at once
+- Filters favorite artworks
+- Provides an image viewer that switches between a right-side dock and full-screen display
+- Browses continuously across artworks with the arrow keys
+- Helps find source images using archived image URLs and filenames
+- Selects multiple artworks and deletes them from the list in bulk
+- Supports light and dark modes
 
-- Google ChromeなどのChromium系ブラウザ
-- Manifest V3とFile System Access APIに対応した環境
-- ログイン済みのpixivアカウント
+## Requirements
 
-Firefoxには現在対応していません。
+- A Chromium-based browser such as Google Chrome
+- Support for Manifest V3 and the File System Access API
+- A signed-in pixiv account
 
-## インストール
+Firefox is not currently supported.
 
-1. このリポジトリをダウンロードまたはクローンする
-2. Chromeで `chrome://extensions` を開く
-3. 「デベロッパーモード」を有効にする
-4. 「パッケージ化されていない拡張機能を読み込む」を選択する
-5. このリポジトリのフォルダーを指定する
+## Installation
 
-## 使い方
+1. Download or clone this repository.
+2. Open `chrome://extensions` in Chrome.
+3. Enable **Developer mode**.
+4. Select **Load unpacked**.
+5. Choose this repository's folder.
 
-1. 拡張機能のポップアップから「記録一覧を開く」を選択する
-2. 初回のみ表示される利用上の注意を確認し、同意する
-3. 画像を含める場合や、メタデータをファイルとして残す場合は「記録先」からフォルダーを指定する
-4. 作品ページでポップアップを開き、「この作品を記録」を選択する
-5. 「記録一覧を開く」から記録した作品を閲覧する
+## Usage
+
+1. Select **Open archive** from the extension popup.
+2. Review and accept the usage notice shown on first launch.
+3. If you want to include images or keep metadata as files, choose a folder under **Archive folder**.
+4. Open the popup on an artwork page and select **Record this artwork**.
+5. Select **Open archive** to browse your recorded artworks.
 
 > [!TIP]
-> 記録一覧ページは、ブラウザでブックマークしておくとすぐに開けます。操作手順は画面右下の「使い方」からいつでも再表示できます。
+> Bookmark the archive page in your browser for quick access. You can reopen the instructions at any time from **Guide** in the bottom-right corner.
 
-### 記録一覧の閲覧
+### Browsing the archive
 
-- サムネイルを**1回クリック**すると、作品を選択せず画像ビューワーを全面表示します
-- サムネイルを**ダブルクリック**しても画像ビューワーを表示できます
-- カード上の「⋯」メニューからは、メタデータ表示・元ページを開く・Googleで検索・一覧からの削除ができます
-- 検索ボックスの隣にある並び替えメニューから、記録日時・投稿日・タイトル・作者名・サイズの順で並び替えできます
-- タグフィルターは横スクロールでき、お気に入りフィルターは常に左端に固定表示されます。複数タグを選んで絞り込んだ場合は「タグをリセット」で一括解除できます
+- **Single-click** a thumbnail to open the image viewer at full width without selecting the artwork.
+- You can also **double-click** a thumbnail to open the viewer.
+- The **⋯** menu on each card lets you view metadata, open the source page, search with Google, or delete the artwork from the archive.
+- Use the sort menu next to the search box to sort by archive date, post date, title, artist name, or size.
+- The tag filters scroll horizontally, while the Favorites filter stays pinned to the left. If you select multiple tags, use **Reset tags** to clear them all at once.
 
-### タイトル非表示モード
+### Hide-titles mode
 
-- 一覧上部の四角が4つ並ぶアイコン（タイトル非表示）で、画像中心の正方形タイル表示に切り替えます。画像の下に線があるカードアイコン（通常表示）で元の表示に戻ります。アイコンにカーソルを合わせると名称を確認できます
-- スクロールすると36作品ずつ自動で追加されます。「もっと表示」ボタンでも追加できます
-- 検索・タグ・お気に入り・並び替えが適用され、該当する保存済み作品をすべて表示すると終了します（同じ作品の繰り返し表示はしません）
-- タイルをクリックすると元の縦横比でビューワーが開きます。タイル表示ではハートボタンを隠すため、お気に入りの変更は通常表示で行います。選択・作品メニューは両モードで利用できます
-- 選択チェックボックスはホバー時・キーボードフォーカス時に表示され、選択済みの作品では常時表示されます。タッチ端末では常時表示されます
-- 表示モードは次回も保持されます。すべて選択は、未読み込み分も含めた絞り込み結果全体が対象です
+- Select the four-square icon (**Hide titles**) at the top of the archive to switch to an image-focused square tile layout. Select the card icon with lines below the image (**Standard view**) to switch back. Hover over either icon to see its name.
+- Scrolling automatically loads 36 more artworks at a time. You can also select **Load more**.
+- Search, tags, favorites, and sorting remain active. Loading stops after all matching archived artworks are displayed, without repeating any artwork.
+- Select a tile to open the viewer at the image's original aspect ratio. The heart button is hidden in tile view, so change favorites in standard view. Selection and artwork menus are available in both modes.
+- Selection checkboxes appear on hover or keyboard focus and remain visible for selected artworks. They are always visible on touch devices.
+- The display mode is remembered for your next visit. **Select all** applies to the complete filtered result, including items that have not yet loaded.
 
-### 画像ビューワー
+### Image viewer
 
-- ビューワーは作品画像を中央に大きく表示し、右下のボタンでページや作品を移動できます
-- 左下に作品タイトル・作成者・作品ID・元作品ページへのリンクを表示します
-- 右上の「閉じる」またはEscキーで一覧に戻ります
-- `←` / `→` キーで前後のページに移動できます。作品の最初/最後のページに達すると、一覧内の前後の作品へ自動的に移動します（1ページのみの作品も同様に次の作品へ移動します）
+- The viewer displays the artwork image prominently in the center. Use the buttons at the bottom right to move between pages and artworks.
+- The bottom left shows the artwork title, artist, artwork ID, and a link to the source artwork page.
+- Select **Close** at the top right or press Esc to return to the archive.
+- Use `←` / `→` to move between pages. At the first or last page of an artwork, navigation continues automatically to the previous or next artwork in the archive. The same behavior applies to single-page artworks.
 
-### 画像の記録
+### Recording images
 
-初期設定ではメタデータのみをブラウザ内の記録一覧へ登録し、作品画像は取得しません。この場合、記録先フォルダーが未選択でも利用できます。画像も必要な場合は、記録先フォルダーを指定してから「画像を含める」をオンにし、表示される注意事項へ同意してください。
+By default, only metadata is added to the browser's archive and artwork images are not downloaded. In this mode, you can use the extension without selecting an archive folder. To include images, choose an archive folder, enable **Include images**, and accept the notice that appears.
 
-メタデータのみの場合も、記録時点の元画像URLとファイル名を手掛かりとして保持します。「元画像を探す」から、作品ID・タイトル・作者・ファイル名・元URLを使った検索リンクを利用できます。画像を直接取得したり、ローカルへ記録したりすることはありません。元画像が削除済みの場合など、再閲覧を保証するものではありません。
+Metadata-only records retain the original image URLs and filenames available when the artwork was recorded. Under **Find the original image**, you can use search links based on the artwork ID, title, artist, filename, and source URL. The extension does not directly retrieve or save images in this mode, and it cannot guarantee that an image will remain available if the source is deleted.
 
-## 記録されるデータ
+## Recorded data
 
-作品ごとに次のようなフォルダーを作成します。画像ファイルは「画像を含める」がオンの場合のみ記録されます。
+The extension creates a folder like the following for each artwork. Image files are recorded only when **Include images** is enabled.
 
 ```text
-選択した記録先/
-└── 作品ID_タイトル/
+Selected archive folder/
+└── ArtworkID_Title/
     ├── metadata.json
     ├── p0.jpg
     └── p1.jpg
 ```
 
-画像の拡張子と枚数は作品によって異なります。ブラウザ内には、記録一覧を表示するためのメタデータと記録先の設定を保持します。
+Image extensions and counts vary by artwork. The browser stores the metadata needed to display the archive and the archive-folder setting.
 
-同じ作品を再記録すると、同名ファイルを置き換えます。記録一覧から作品を削除しても、記録先フォルダー内の画像ファイルは削除されません。
+Recording the same artwork again replaces files with the same names. Deleting an artwork from the archive does not delete its image files from the archive folder.
 
-## キーボードショートカット
+## Keyboard shortcuts
 
-| キー                   | 操作                                              |
-| ---------------------- | ------------------------------------------------- |
-| `/`                    | 検索ボックスへ移動                                |
-| `Cmd + A` / `Ctrl + A` | 表示中の作品をすべて選択                          |
-| `Esc`                  | 選択の解除、開いているメニュー/ビューワーを閉じる |
-| `Enter`                | フォーカス中の作品をビューワーで開く              |
-| `←` / `→`              | ビューワー内で前後のページ・作品に移動            |
+| Key                    | Action                                          |
+| ---------------------- | ----------------------------------------------- |
+| `/`                    | Focus the search box                            |
+| `Cmd + A` / `Ctrl + A` | Select all visible artworks                     |
+| `Esc`                  | Clear selection or close an open menu or viewer |
+| `Enter`                | Open the focused artwork in the viewer          |
+| `←` / `→`              | Move between pages and artworks in the viewer   |
 
-## 使用する権限
+## Permissions
 
-- `storage`: 設定と記録一覧用メタデータの保持
-- `scripting`: 作品ページからの情報取得
-- `declarativeNetRequestWithHostAccess`: 作品画像を取得する際のリクエスト調整
-- `https://www.pixiv.net/*`: 作品情報の取得
-- `https://i.pximg.net/*`: 作品画像の取得
+- `storage`: Stores settings and metadata used by the archive.
+- `scripting`: Retrieves information from artwork pages.
+- `declarativeNetRequestWithHostAccess`: Adjusts requests when retrieving artwork images.
+- `https://www.pixiv.net/*`: Retrieves artwork information.
+- `https://i.pximg.net/*`: Retrieves artwork images.
 
-外部サーバーへのアップロードや共有リンクの作成は行いません。詳細は [プライバシーポリシー](PRIVACY.md)を参照してください。
+The extension does not upload data to an external server or create sharing links. See the [privacy policy](PRIVACY.md) for details.
 
-## 利用上の注意
+## Usage notice
 
-作品の著作権は作者などの権利者に帰属します。記録した画像は個人的な閲覧の範囲で扱い、無断転載・共有・再配布をしないでください。適用される法令と閲覧元サービスの利用規約を確認し、利用者自身の責任で使用してください。
+Artwork copyrights belong to their respective rights holders. Keep recorded images within the scope of personal viewing, and do not repost, share, or redistribute them without permission. Review all applicable laws and the source service's terms, and use the extension at your own responsibility.
 
-本拡張機能は非公式であり、ピクシブ株式会社とは関係ありません。
+This is an unofficial extension and is not affiliated with Pixiv Inc.
 
-## フィードバック
+## Feedback
 
-不具合報告や提案は [GitHub Issues](https://github.com/fjt-dev/illustration-archive/issues) へお願いします。Pull Requestも歓迎します。
+Please report bugs and suggestions through [GitHub Issues](https://github.com/fjt-dev/illustration-archive/issues). Pull requests are welcome.

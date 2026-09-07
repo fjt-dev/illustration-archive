@@ -10,6 +10,7 @@ import {
 import { initTheme, setTheme } from "./theme.js";
 import { formatBytes } from "./utils.js";
 import { createArchiveViewer } from "./archive-viewer.js";
+import { catalogLocale, localizeDocument, message } from "./i18n.js";
 import {
   completeOnboarding,
   disableImageRecording,
@@ -19,6 +20,7 @@ import {
   shouldIncludeImages
 } from "./settings.js";
 
+localizeDocument();
 const themeButton = document.querySelector("#theme-toggle");
 const themeMenu = document.querySelector("#theme-menu");
 const searchInput = document.querySelector("#search");
@@ -26,6 +28,7 @@ const sortMenu = document.querySelector("#sort-menu");
 const sortToggle = document.querySelector("#sort-toggle");
 const sortToggleLabel = document.querySelector("#sort-toggle-label");
 const tagFilters = document.querySelector("#tag-filters");
+const uiLocale = catalogLocale();
 let selectedTheme = await initTheme(themeButton);
 updateThemeOptions();
 themeMenu.addEventListener("click", async (event) => {
@@ -129,8 +132,8 @@ const sortComparators = {
   "archived-asc": (a, b) => compareDates(a.archivedAt, b.archivedAt, "asc"),
   "posted-desc": (a, b) => compareDates(a.postedAt, b.postedAt, "desc"),
   "posted-asc": (a, b) => compareDates(a.postedAt, b.postedAt, "asc"),
-  "title-asc": (a, b) => (a.title || "").localeCompare(b.title || "", "ja"),
-  "creator-asc": (a, b) => (a.creatorName || "").localeCompare(b.creatorName || "", "ja"),
+  "title-asc": (a, b) => (a.title || "").localeCompare(b.title || "", uiLocale),
+  "creator-asc": (a, b) => (a.creatorName || "").localeCompare(b.creatorName || "", uiLocale),
   "size-desc": (a, b) => (b.byteSize || 0) - (a.byteSize || 0)
 };
 
@@ -264,15 +267,15 @@ restoreFolderAccess.addEventListener("click", async () => {
 document.querySelector("#delete-selected").addEventListener("click", async () => {
   const targets = works.filter((work) => selectedIds.has(work.id));
   if (!targets.length) return;
-  if (!confirm(`選択した${targets.length}作品を一覧から削除しますか？\n外部フォルダーの画像ファイルは削除されません。`)) return;
+  if (!confirm(message("confirmDeleteSelected", String(targets.length)))) return;
 
   const button = document.querySelector("#delete-selected");
   button.disabled = true;
-  button.textContent = "削除中…";
+  button.textContent = message("deleting");
   await Promise.all(targets.map((work) => deleteWork(work.id)));
   works = works.filter((work) => !selectedIds.has(work.id));
   selectedIds.clear();
-  button.textContent = "選択項目を削除";
+  button.textContent = message("deleteSelected");
   applyFilters();
 });
 
@@ -286,7 +289,7 @@ document.querySelector("#choose-folder").addEventListener("click", async () => {
     button.disabled = true;
     let failures = 0;
     for (let index = 0; index < works.length; index += 1) {
-      button.textContent = `既存作品をコピー中 ${index + 1}/${works.length}`;
+      button.textContent = message("copyingExisting", [String(index + 1), String(works.length)]);
       try {
         let images = await getImages(works[index].id);
         if (!images.length && works[index].imageCount > 0) {
@@ -318,12 +321,12 @@ document.querySelector("#choose-folder").addEventListener("click", async () => {
         failures += 1;
       }
     }
-    if (failures) alert(`${failures}作品を新しい記録先へコピーできませんでした`);
+    if (failures) alert(message("copyFailures", String(failures)));
   } catch (error) {
     if (error.name !== "AbortError") alert(error.message);
   } finally {
     button.disabled = false;
-    button.textContent = "記録先";
+    button.textContent = message("archiveFolder");
   }
 });
 
@@ -349,7 +352,7 @@ function applyFilters() {
 }
 
 function render(items, { reset = false } = {}) {
-  summary.textContent = `${works.length}作品・${formatBytes(works.reduce((sum, work) => sum + (work.byteSize || 0), 0))}`;
+  summary.textContent = message("archiveSummary", [String(works.length), formatBytes(works.reduce((sum, work) => sum + (work.byteSize || 0), 0))]);
   renderTagFilters();
   scrollObserver.disconnect();
   thumbnailObserver.disconnect();
@@ -364,7 +367,7 @@ function render(items, { reset = false } = {}) {
     : items.length;
   grid.replaceChildren(...items.slice(0, renderedCount).map(card));
   updateScrollFooter();
-  if (!items.length) grid.textContent = works.length ? "条件に一致する作品はありません。" : "記録済み作品はありません。";
+  if (!items.length) grid.textContent = works.length ? message("noMatchingArtworks") : message("noArchivedArtworks");
   updateSelectionControls();
 }
 
@@ -373,8 +376,8 @@ function updateScrollFooter() {
   const hasMore = renderedCount < visibleWorks.length;
   loadMoreButton.hidden = !hasMore;
   scrollStatus.textContent = hasMore
-    ? `${visibleWorks.length}作品中 ${renderedCount}作品を表示`
-    : `${visibleWorks.length}作品をすべて表示しました`;
+    ? message("showingArtworks", [String(renderedCount), String(visibleWorks.length)])
+    : message("showingAllArtworks", String(visibleWorks.length));
   if (!scrollFooter.hidden && hasMore) scrollObserver.observe(loadMoreButton);
 }
 
@@ -406,7 +409,7 @@ function renderTagFilters() {
   const favorite = document.createElement("button");
   favorite.type = "button";
   favorite.className = "tag-filter favorite-filter";
-  favorite.textContent = "♥ お気に入り";
+  favorite.textContent = message("favoritesFilter");
   favorite.setAttribute("aria-pressed", String(favoriteOnly));
   favorite.addEventListener("click", () => {
     favoriteOnly = !favoriteOnly;
@@ -433,7 +436,7 @@ function renderTagFilters() {
     const reset = document.createElement("button");
     reset.type = "button";
     reset.className = "tag-reset";
-    reset.textContent = "タグをリセット";
+    reset.textContent = message("resetTags");
     reset.addEventListener("click", () => {
       activeTags.clear();
       applyFilters();
@@ -458,7 +461,7 @@ function popularTags() {
     });
   });
   return [...counts.values()]
-    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, "ja"));
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, uiLocale));
 }
 
 function normalizeTag(tag) {
@@ -468,7 +471,7 @@ function normalizeTag(tag) {
 function card(work) {
   const article = document.querySelector("#work-card-template").content.firstElementChild.cloneNode(true);
   article.classList.toggle("metadata-only", work.imageCount === 0);
-  article.setAttribute("aria-label", `${work.title}を選択`);
+  article.setAttribute("aria-label", message("selectNamedArtwork", work.title));
   const checkbox = article.querySelector(".select-work input");
   checkbox.checked = selectedIds.has(work.id);
   article.classList.toggle("selected", checkbox.checked);
@@ -498,8 +501,8 @@ function card(work) {
     }
   });
   article.querySelector("h2").textContent = work.title;
-  article.querySelector(".creator").textContent = work.creatorName || "作者不明";
-  article.querySelector(".meta").textContent = `${work.imageCount}枚・${formatBytes(work.byteSize)}`;
+  article.querySelector(".creator").textContent = work.creatorName || message("unknownArtist");
+  article.querySelector(".meta").textContent = message("imageCountAndSize", [String(work.imageCount), formatBytes(work.byteSize)]);
   const sourceLink = article.querySelector("[data-source]");
   if (work.sourceUrl) sourceLink.href = work.sourceUrl;
   else sourceLink.hidden = true;
@@ -551,7 +554,7 @@ function card(work) {
     openWorkViewer(work);
   });
   article.querySelector("[data-delete]").addEventListener("click", async () => {
-    if (!confirm(`「${work.title}」を一覧から削除しますか？\n外部フォルダーの画像ファイルは削除されません。`)) return;
+    if (!confirm(message("confirmDeleteArtwork", work.title))) return;
     await deleteWork(work.id);
     works = works.filter((item) => item.id !== work.id);
     selectedIds.delete(work.id);
@@ -561,7 +564,7 @@ function card(work) {
     item.addEventListener("click", () => article.querySelector(".card-menu").removeAttribute("open"));
   });
   article.work = work;
-  article.title = `${work.title} — ${work.creatorName || "作者不明"}`;
+  article.title = `${work.title} — ${work.creatorName || message("unknownArtist")}`;
   if (viewMode === "infinite") thumbnailObserver.observe(article);
   else archiveViewer.loadThumbnail(article.querySelector(".thumb-content"), work);
   return article;
@@ -570,13 +573,13 @@ function card(work) {
 function updateFavoriteButton(button, work) {
   const favorite = work.favorite === true;
   button.setAttribute("aria-pressed", String(favorite));
-  button.setAttribute("aria-label", favorite ? "お気に入りから削除" : "お気に入りに追加");
+  button.setAttribute("aria-label", favorite ? message("removeFavorite") : message("addFavorite"));
 }
 
 function showFolderName(handle) {
   document.querySelector("#folder-name").textContent = handle
-    ? `記録先: ${handle.name}`
-    : "記録先: 未選択";
+    ? message("archiveFolderNamed", handle.name)
+    : message("archiveFolderNotSelected");
 }
 
 async function updateFolderAccess(handle) {
@@ -590,7 +593,7 @@ function updateSelectionControls() {
   tagFilters.hidden = works.length === 0 || count > 0;
   const deleteButton = document.querySelector("#delete-selected");
   deleteButton.disabled = count === 0;
-  deleteButton.textContent = count ? `${count}件を削除` : "選択項目を削除";
+  deleteButton.textContent = count ? message("deleteCount", String(count)) : message("deleteSelected");
 
   document.querySelector("#select-visible").disabled = visibleWorks.length === 0
     || visibleWorks.every((work) => selectedIds.has(work.id));

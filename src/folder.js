@@ -1,3 +1,5 @@
+import { message } from "./i18n.js";
+
 const HANDLE_DB = "pixiv-local-archive-folder";
 const HANDLE_STORE = "settings";
 
@@ -23,11 +25,11 @@ function requestResult(request) {
 
 export async function chooseArchiveFolder() {
   if (!("showDirectoryPicker" in globalThis)) {
-    throw new Error("このブラウザは記録先フォルダーの選択に対応していません");
+    throw new Error(message("folderPickerUnsupported"));
   }
   const handle = await globalThis.showDirectoryPicker({ mode: "readwrite" });
   const permission = await handle.requestPermission({ mode: "readwrite" });
-  if (permission !== "granted") throw new Error("フォルダーへの書き込みが許可されませんでした");
+  if (permission !== "granted") throw new Error(message("folderWriteDenied"));
   const db = await openHandleDb();
   const tx = db.transaction(HANDLE_STORE, "readwrite");
   tx.objectStore(HANDLE_STORE).put(handle, "archive-folder");
@@ -95,15 +97,15 @@ export async function saveArchiveToFolder(work, images) {
 
 export async function readArchiveImages(work) {
   const root = await getArchiveFolder();
-  if (!root) throw new Error("記録先フォルダーが選択されていません");
+  if (!root) throw new Error(message("archiveFolderNotConfigured"));
   return readArchiveImagesFromFolder(root, work);
 }
 
 export async function readArchiveImage(work, index = 0) {
   const root = await getArchiveFolder();
-  if (!root) throw new Error("記録先フォルダーが選択されていません");
+  if (!root) throw new Error(message("archiveFolderNotConfigured"));
   if (await root.queryPermission({ mode: "read" }) !== "granted") {
-    throw new Error("記録先フォルダーへのアクセス許可が必要です");
+    throw new Error(message("archiveFolderPermissionRequired"));
   }
   const directoryName = work.folderDirectoryName || safeName(`${work.id}_${work.title || "untitled"}`);
   const directory = await root.getDirectoryHandle(directoryName);
@@ -119,7 +121,7 @@ export async function readArchiveImage(work, index = 0) {
 
 export async function readArchiveImagesFromFolder(root, work) {
   if (await root.queryPermission({ mode: "read" }) !== "granted") {
-    throw new Error("記録先フォルダーへのアクセス許可が必要です");
+    throw new Error(message("archiveFolderPermissionRequired"));
   }
 
   const directoryName = work.folderDirectoryName || safeName(`${work.id}_${work.title || "untitled"}`);

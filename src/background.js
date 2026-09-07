@@ -1,8 +1,9 @@
 import { getWork, saveArchive, updateWorkMetadata } from "./db.js";
 import { getArchiveFolder, saveArchiveToFolder } from "./folder.js";
 import { hasUsageConsent, shouldIncludeImages } from "./settings.js";
+import { message } from "./i18n.js";
 
-const CONTENT_SCRIPT_VERSION = 6;
+const CONTENT_SCRIPT_VERSION = 7;
 
 chrome.runtime.onInstalled.addListener((details) => {
   ensureArtworkTabsConnected();
@@ -42,16 +43,16 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 });
 
 async function archiveWork(work, { metadataResolved = false } = {}) {
-  if (!work?.id) throw new Error("作品IDを取得できませんでした");
+  if (!work?.id) throw new Error(message("artworkIdFailed"));
   if (!await hasUsageConsent()) {
-    throw new Error("記録一覧で利用上の注意を確認し、同意してください");
+    throw new Error(message("consentRequired"));
   }
   const includeImages = await shouldIncludeImages();
   if (includeImages) {
     const folder = await getArchiveFolder();
-    if (!folder) throw new Error("先に記録一覧から記録先フォルダーを選択してください");
+    if (!folder) throw new Error(message("chooseFolderFirst"));
     if (await folder.queryPermission({ mode: "readwrite" }) !== "granted") {
-      throw new Error("記録一覧から記録先フォルダーへのアクセスを再許可してください");
+      throw new Error(message("restoreFolderAccessRequired"));
     }
   }
   const images = [];
@@ -79,8 +80,8 @@ async function archiveWork(work, { metadataResolved = false } = {}) {
   }
   if (includeImages && !folder.saved) {
     throw new Error(folder.reason === "not-configured"
-      ? "先に記録一覧から記録先フォルダーを選択してください"
-      : `記録先フォルダーへ書き込めませんでした: ${folder.reason || "権限を確認してください"}`);
+      ? message("chooseFolderFirst")
+      : message("folderWriteFailed", folder.reason || message("checkPermission")));
   }
   await saveArchive({
     ...storedWork,
@@ -153,7 +154,7 @@ function metadataForStorage(work) {
 
 async function completeStoredWorkMetadata(workId) {
   const work = await getWork(workId);
-  if (!work) throw new Error("記録済み作品が見つかりませんでした");
+  if (!work) throw new Error(message("archivedArtworkNotFound"));
   const enrichedWork = await enrichWorkMetadata(work, { required: true });
   const metadata = metadataForStorage(enrichedWork);
   await updateWorkMetadata(workId, metadata);
@@ -165,9 +166,9 @@ async function getArtworkDetails(workId) {
     credentials: "include",
     cache: "no-store"
   });
-  if (!response.ok) throw new Error(`不足している作品情報の取得に失敗しました (${response.status})`);
+  if (!response.ok) throw new Error(message("missingArtworkInfoFailedStatus", String(response.status)));
   const data = await response.json();
-  if (data.error || !data.body) throw new Error(data.message || "不足している作品情報を取得できませんでした");
+  if (data.error || !data.body) throw new Error(data.message || message("missingArtworkInfoFailed"));
   return data.body;
 }
 
@@ -208,7 +209,7 @@ async function downloadImages(urls) {
   const images = [];
   for (const url of urls) {
     const response = await fetch(url, { credentials: "include" });
-    if (!response.ok) throw new Error(`画像取得に失敗しました (${response.status})`);
+    if (!response.ok) throw new Error(message("imageDownloadFailedStatus", String(response.status)));
     const blob = await response.blob();
     images.push({ blob, mimeType: blob.type || "application/octet-stream" });
   }
@@ -221,18 +222,18 @@ async function getArtworkImageUrls(workId) {
     cache: "no-store"
   });
   if (!response.ok) {
-    throw new Error(`作品ページ情報の取得に失敗しました (${response.status})`);
+    throw new Error(message("artworkPageInfoFailedStatus", String(response.status)));
   }
 
   const data = await response.json();
   if (data.error || !Array.isArray(data.body)) {
-    throw new Error(data.message || "作品ページ情報を取得できませんでした");
+    throw new Error(data.message || message("artworkPageInfoFailed"));
   }
 
   const urls = data.body
     .map((page) => page?.urls?.original)
     .filter((url) => typeof url === "string" && url.startsWith("https://i.pximg.net/"));
 
-  if (urls.length === 0) throw new Error("作品画像を取得できませんでした");
+  if (urls.length === 0) throw new Error(message("artworkImagesFailed"));
   return urls;
 }

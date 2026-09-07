@@ -1,7 +1,9 @@
 import { initTheme } from "./theme.js";
 import { formatBytes } from "./utils.js";
 import { onIncludeImagesChanged, shouldIncludeImages } from "./settings.js";
+import { localizeDocument, message } from "./i18n.js";
 
+localizeDocument();
 await initTheme();
 
 const status = document.querySelector("#status");
@@ -12,26 +14,26 @@ onIncludeImagesChanged(updateRecordMode);
 
 function updateRecordMode(includeImages) {
   document.querySelector("#record-mode").textContent = includeImages
-    ? "メタデータ＋画像"
-    : "メタデータのみ";
+    ? message("metadataAndImages")
+    : message("metadataOnly");
 }
 
 save.addEventListener("click", async () => {
   save.disabled = true;
-  status.textContent = "作品情報を取得しています…";
+  status.textContent = message("gettingArtworkInfo");
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tab?.id || !tab.url?.match(/^https:\/\/www\.pixiv\.net\/artworks\//)) {
-      throw new Error("pixivの作品ページを開いてください");
+      throw new Error(message("openPixivArtworkPage"));
     }
     const extracted = await getCurrentWork(tab.id);
-    if (!extracted?.ok) throw new Error(extracted?.error || "作品情報を取得できませんでした");
-    status.textContent = `${extracted.work.title} を記録しています…`;
+    if (!extracted?.ok) throw new Error(extracted?.error || message("artworkInfoFailed"));
+    status.textContent = message("recordingArtwork", extracted.work.title);
     const result = await chrome.runtime.sendMessage({ type: "ARCHIVE_WORK", work: extracted.work });
-    if (!result?.ok) throw new Error(result?.error || "記録に失敗しました");
+    if (!result?.ok) throw new Error(result?.error || message("recordFailed"));
     status.textContent = result.imageCount > 0
-      ? `${result.imageCount}枚・${formatBytes(result.byteSize)}を記録しました。`
-      : "メタデータを記録しました。";
+      ? message("recordedImages", [String(result.imageCount), formatBytes(result.byteSize)])
+      : message("recordedMetadata");
   } catch (error) {
     status.textContent = error.message;
   } finally {

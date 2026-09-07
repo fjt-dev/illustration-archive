@@ -32,6 +32,7 @@ test('renders the 20 most popular tags', () => {
     applyFilters() {},
     document: { createElement },
     favoriteOnly: false,
+    message: key => key,
     popularTags: () => allTags,
     selectedIds: new Set(),
     tagFilters,
