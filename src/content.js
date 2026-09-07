@@ -1,6 +1,7 @@
 (() => {
 const INSTANCE_KEY = "__ILLUSTRATION_ARCHIVE_INSTANCE__";
-const CONTENT_SCRIPT_VERSION = 6;
+const CONTENT_SCRIPT_VERSION = 7;
+const message = (key, substitutions) => chrome.i18n.getMessage(key, substitutions) || key;
 try { globalThis[INSTANCE_KEY]?.dispose?.(); } catch {}
 
 function parsePreload() {
@@ -11,7 +12,7 @@ function parsePreload() {
 
 function currentWork() {
   const id = location.pathname.match(/\/artworks\/(\d+)/)?.[1];
-  if (!id) throw new Error("作品IDを取得できませんでした");
+  if (!id) throw new Error(message("artworkIdFailed"));
 
   const preload = parsePreload();
   const illust = preload?.illust?.[id];
@@ -80,8 +81,8 @@ function createRecordButton() {
   const button = document.createElement("button");
   button.type = "button";
   button.dataset.illustrationArchiveRecord = "";
-  button.textContent = "＋ 記録";
-  button.setAttribute("aria-label", "この作品を記録");
+  button.textContent = message("recordButton");
+  button.setAttribute("aria-label", message("recordThisArtwork"));
   Object.assign(button.style, {
     position: "fixed", right: "24px", bottom: "104px", zIndex: "2147483646",
     minWidth: "88px", height: "42px", padding: "0 16px", border: "0",
@@ -99,23 +100,23 @@ function updateRecordButton() {
   if (artworkPath && artworkPath !== currentArtworkPath) {
     currentArtworkPath = artworkPath;
     recordButton.disabled = false;
-    recordButton.textContent = "＋ 記録";
+    recordButton.textContent = message("recordButton");
   }
 }
 
 async function recordCurrentWork() {
   recordButton.disabled = true;
-  recordButton.textContent = "記録中…";
+  recordButton.textContent = message("recording");
   try {
     const result = await chrome.runtime.sendMessage({ type: "ARCHIVE_WORK", work: currentWork() });
-    if (!result?.ok) throw new Error(result?.error || "記録に失敗しました");
-    recordButton.textContent = "✓ 記録済み";
+    if (!result?.ok) throw new Error(result?.error || message("recordFailed"));
+    recordButton.textContent = message("recordedButton");
     showSavedNotice();
   } catch (error) {
     if (isInvalidatedContext(error)) return dispose();
     recordButton.disabled = false;
-    recordButton.textContent = "再試行";
-    showNotice(error.message || "記録に失敗しました", true);
+    recordButton.textContent = message("retry");
+    showNotice(error.message || message("recordFailed"), true);
   }
 }
 
@@ -134,7 +135,7 @@ function dispose() {
 }
 
 function showSavedNotice() {
-  showNotice("作品を記録しました");
+  showNotice(message("artworkRecorded"));
 }
 
 function showNotice(message, isError = false) {

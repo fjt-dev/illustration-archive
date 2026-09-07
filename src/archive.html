@@ -1,63 +1,63 @@
 <!doctype html>
-<html lang="ja">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="styles.css"><title>記録済み作品</title></head>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="styles.css"><title data-i18n="archivedArtworks">Archived artworks</title></head>
 <body class="archive-page">
   <header>
-    <div><h1>記録済み作品</h1><p id="summary"></p></div>
+    <div><h1 data-i18n="archivedArtworks">Archived artworks</h1><p id="summary"></p></div>
     <div class="toolbar">
-      <button id="choose-folder">記録先</button>
-      <span id="folder-name">記録先: 未選択</span>
-      <button id="restore-folder-access" class="folder-access" hidden>アクセスを再許可</button>
-      <label class="archive-include-images"><span>画像を含める</span><input id="archive-include-images" type="checkbox" role="switch"></label>
+      <button id="choose-folder" data-i18n="archiveFolder">Archive folder</button>
+      <span id="folder-name" data-i18n="archiveFolderNotSelected">Archive folder: Not selected</span>
+      <button id="restore-folder-access" class="folder-access" hidden data-i18n="restoreAccess">Restore access</button>
+      <label class="archive-include-images"><span data-i18n="includeImages">Include images</span><input id="archive-include-images" type="checkbox" role="switch"></label>
       <label class="search-box">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg>
-        <input id="search" type="search" placeholder="タイトル・作者・タグで検索">
+        <input id="search" type="search" placeholder="Search by title, artist, or tag" data-i18n-attrs="placeholder:searchPlaceholder">
         <kbd>/</kbd>
       </label>
       <details id="sort-menu" class="sort-menu">
-        <summary id="sort-toggle" aria-haspopup="menu" aria-label="並び替え">
-          <span id="sort-toggle-label">記録日時の新しい順</span>
+        <summary id="sort-toggle" aria-haspopup="menu" aria-label="Sort" data-i18n-attrs="aria-label:sort">
+          <span id="sort-toggle-label" data-i18n="sortArchivedNewest">Recently archived</span>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 10 5 5 5-5"></path></svg>
         </summary>
-        <div class="sort-menu-items" role="menu" aria-label="並び替え">
-          <button type="button" role="menuitemradio" aria-checked="true" data-sort-value="archived-desc">記録日時の新しい順</button>
-          <button type="button" role="menuitemradio" aria-checked="false" data-sort-value="archived-asc">記録日時の古い順</button>
-          <button type="button" role="menuitemradio" aria-checked="false" data-sort-value="posted-desc">投稿日の新しい順</button>
-          <button type="button" role="menuitemradio" aria-checked="false" data-sort-value="posted-asc">投稿日の古い順</button>
-          <button type="button" role="menuitemradio" aria-checked="false" data-sort-value="title-asc">タイトル順</button>
-          <button type="button" role="menuitemradio" aria-checked="false" data-sort-value="creator-asc">作者名順</button>
-          <button type="button" role="menuitemradio" aria-checked="false" data-sort-value="size-desc">サイズの大きい順</button>
+        <div class="sort-menu-items" role="menu" aria-label="Sort" data-i18n-attrs="aria-label:sort">
+          <button type="button" role="menuitemradio" aria-checked="true" data-sort-value="archived-desc" data-i18n="sortArchivedNewest">Recently archived</button>
+          <button type="button" role="menuitemradio" aria-checked="false" data-sort-value="archived-asc" data-i18n="sortArchivedOldest">Oldest archived</button>
+          <button type="button" role="menuitemradio" aria-checked="false" data-sort-value="posted-desc" data-i18n="sortPostedNewest">Newest posts</button>
+          <button type="button" role="menuitemradio" aria-checked="false" data-sort-value="posted-asc" data-i18n="sortPostedOldest">Oldest posts</button>
+          <button type="button" role="menuitemradio" aria-checked="false" data-sort-value="title-asc" data-i18n="sortTitle">Title</button>
+          <button type="button" role="menuitemradio" aria-checked="false" data-sort-value="creator-asc" data-i18n="sortArtist">Artist</button>
+          <button type="button" role="menuitemradio" aria-checked="false" data-sort-value="size-desc" data-i18n="sortSize">Largest size</button>
         </div>
       </details>
       <div class="display-controls">
-        <div class="view-mode" role="group" aria-label="作品の表示モード">
-          <button type="button" data-view-mode="standard" aria-pressed="true" aria-label="通常表示" title="通常表示">
+        <div class="view-mode" role="group" aria-label="Artwork display mode" data-i18n-attrs="aria-label:viewMode">
+          <button type="button" data-view-mode="standard" aria-pressed="true" aria-label="Standard view" title="Standard view" data-i18n-attrs="aria-label:standardView,title:standardView">
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="7" height="10" rx="1"></rect><rect x="14" y="4" width="7" height="10" rx="1"></rect><path d="M3 18h7M14 18h7M3 21h4M14 21h4"></path></svg>
           </button>
-          <button type="button" data-view-mode="infinite" aria-pressed="false" aria-label="タイトル非表示" title="タイトル非表示">
+          <button type="button" data-view-mode="infinite" aria-pressed="false" aria-label="Hide titles" title="Hide titles" data-i18n-attrs="aria-label:hideTitles,title:hideTitles">
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg>
           </button>
         </div>
         <details id="theme-menu" class="theme-menu">
-          <summary id="theme-toggle" aria-haspopup="menu" aria-label="表示テーマを選択">
+          <summary id="theme-toggle" aria-haspopup="menu" aria-label="Choose theme" data-i18n-attrs="aria-label:chooseTheme">
             <svg data-theme-current-icon viewBox="0 0 24 24" aria-hidden="true">
               <g data-theme-shape="light"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></g>
               <g data-theme-shape="dark"><path d="M20.2 15.2A8.5 8.5 0 0 1 8.8 3.8 8.5 8.5 0 1 0 20.2 15.2Z"></path></g>
               <g data-theme-shape="system"><circle cx="12" cy="12" r="8"></circle><path d="M12 4a8 8 0 0 1 0 16Z"></path></g>
             </svg>
           </summary>
-          <div class="theme-menu-items" role="menu" aria-label="表示テーマ">
+          <div class="theme-menu-items" role="menu" aria-label="Theme" data-i18n-attrs="aria-label:theme">
             <button type="button" role="menuitemradio" data-theme-value="light">
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
-              <span>ライトモード</span>
+              <span data-i18n="lightMode">Light mode</span>
             </button>
             <button type="button" role="menuitemradio" data-theme-value="dark">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 15.2A8.5 8.5 0 0 1 8.8 3.8 8.5 8.5 0 1 0 20.2 15.2Z"></path></svg>
-              <span>ダークモード</span>
+              <span data-i18n="darkMode">Dark mode</span>
             </button>
             <button type="button" role="menuitemradio" data-theme-value="system">
               <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 4a8 8 0 0 1 0 16Z"></path></svg>
-              <span>デバイスのデフォルト</span>
+              <span data-i18n="systemDefault">System default</span>
             </button>
           </div>
         </details>
@@ -65,90 +65,90 @@
     </div>
   </header>
   <div class="context-bar">
-    <nav id="tag-filters" class="tag-filters" aria-label="タグで絞り込み" hidden></nav>
-    <div id="selection-actions" class="selection-actions" aria-label="選択した作品の操作" hidden>
+    <nav id="tag-filters" class="tag-filters" aria-label="Filter by tag" data-i18n-attrs="aria-label:filterByTag" hidden></nav>
+    <div id="selection-actions" class="selection-actions" aria-label="Actions for selected artworks" data-i18n-attrs="aria-label:selectedActions" hidden>
       <div class="selection-actions-controls">
-        <button id="select-visible">すべて選択</button>
-        <button id="clear-selection">すべて選択解除</button>
-        <button id="delete-selected" class="danger" disabled>選択項目を削除</button>
+        <button id="select-visible" data-i18n="selectAll">Select all</button>
+        <button id="clear-selection" data-i18n="clearSelection">Clear selection</button>
+        <button id="delete-selected" class="danger" disabled data-i18n="deleteSelected">Delete selected</button>
       </div>
     </div>
   </div>
   <main id="works" class="grid"></main>
   <div id="scroll-footer" class="scroll-footer" hidden>
     <p id="scroll-status" role="status" aria-live="polite"></p>
-    <button id="load-more" type="button">もっと表示</button>
+    <button id="load-more" type="button" data-i18n="loadMore">Load more</button>
   </div>
-  <nav class="page-links" aria-label="関連リンク">
-    <button id="open-guide" class="page-link">使い方</button>
-    <button id="open-shortcuts" class="page-link">ショートカット一覧</button>
-    <a class="page-link" href="https://www.pixiv.net/bookmark.php" target="_blank" rel="noreferrer">pixivでブックマークを閲覧</a>
+  <nav class="page-links" aria-label="Related links" data-i18n-attrs="aria-label:relatedLinks">
+    <button id="open-guide" class="page-link" data-i18n="guide">Guide</button>
+    <button id="open-shortcuts" class="page-link" data-i18n="shortcuts">Keyboard shortcuts</button>
+    <a class="page-link" href="https://www.pixiv.net/bookmark.php" target="_blank" rel="noreferrer" data-i18n="viewPixivBookmarks">View pixiv bookmarks</a>
     <a class="page-link" href="https://github.com/fjt-dev/illustration-archive" target="_blank" rel="noreferrer">GitHub Repository</a>
   </nav>
-  <aside id="viewer" aria-label="画像ビューワー" hidden>
-    <button id="close" aria-label="閉じる"><span aria-hidden="true">×</span></button>
+  <aside id="viewer" aria-label="Image viewer" data-i18n-attrs="aria-label:imageViewer" hidden>
+    <button id="close" aria-label="Close" data-i18n-attrs="aria-label:close"><span aria-hidden="true">×</span></button>
     <div id="viewer-content"></div>
   </aside>
-  <dialog id="metadata-viewer" class="metadata-dialog"><button id="close-metadata" aria-label="閉じる">閉じる</button><div id="metadata-content"></div></dialog>
+  <dialog id="metadata-viewer" class="metadata-dialog"><button id="close-metadata" aria-label="Close" data-i18n="close" data-i18n-attrs="aria-label:close">Close</button><div id="metadata-content"></div></dialog>
   <dialog id="shortcuts-dialog" class="shortcuts-dialog">
-    <h2>キーボードショートカット</h2>
+    <h2 data-i18n="shortcuts">Keyboard shortcuts</h2>
     <dl>
-      <div><dt><kbd>/</kbd></dt><dd>検索ボックスへ移動</dd></div>
-      <div><dt><kbd>⌘ / Ctrl</kbd> + <kbd>A</kbd></dt><dd>表示中の作品をすべて選択</dd></div>
-      <div><dt><kbd>Esc</kbd></dt><dd>選択をすべて解除</dd></div>
-      <div><dt><kbd>Enter</kbd></dt><dd>フォーカス中の画像を拡大表示</dd></div>
+      <div><dt><kbd>/</kbd></dt><dd data-i18n="shortcutSearch">Focus the search box</dd></div>
+      <div><dt><kbd>⌘ / Ctrl</kbd> + <kbd>A</kbd></dt><dd data-i18n="shortcutSelectAll">Select all visible artworks</dd></div>
+      <div><dt><kbd>Esc</kbd></dt><dd data-i18n="shortcutClear">Clear the selection</dd></div>
+      <div><dt><kbd>Enter</kbd></dt><dd data-i18n="shortcutOpen">Open the focused image</dd></div>
     </dl>
-    <button id="close-shortcuts">閉じる</button>
+    <button id="close-shortcuts" data-i18n="close">Close</button>
   </dialog>
   <dialog id="usage-consent" class="usage-consent-dialog">
-    <div class="onboarding-badge">初回のみ</div>
-    <h2>利用上の注意</h2>
-    <p>利用前に以下を確認してください。</p>
+    <div class="onboarding-badge" data-i18n="firstTimeOnly">First time only</div>
+    <h2 data-i18n="usageNotice">Usage notice</h2>
+    <p data-i18n="reviewBeforeUse">Please review the following before use.</p>
     <ul>
-      <li>作品の権利は作者などの権利者に帰属します。</li>
-      <li>記録した画像は個人利用の範囲で扱い、共有・再配布しないでください。</li>
-      <li>外部サービスのアカウント制限・停止について、開発者は責任を負いません。</li>
-      <li>各サービスの規約を確認し、ご自身の責任で利用してください。</li>
+      <li data-i18n="noticeRights">Artwork rights belong to their respective owners.</li>
+      <li data-i18n="noticePersonalUse">Keep recorded images for personal use; do not share or redistribute them.</li>
+      <li data-i18n="noticeAccount">The developer is not responsible for restrictions or suspension of third-party accounts.</li>
+      <li data-i18n="noticeTerms">Review each service's terms and use this extension at your own responsibility.</li>
     </ul>
-    <p class="consent-note">初期設定ではメタデータのみを記録します。</p>
-    <button id="usage-consent-agree" class="primary">同意する</button>
+    <p class="consent-note" data-i18n="metadataDefault">By default, only metadata is recorded.</p>
+    <button id="usage-consent-agree" class="primary" data-i18n="agree">Agree</button>
   </dialog>
   <dialog id="image-recording-consent" class="consent-dialog">
-    <h2>画像を記録に含めますか？</h2>
-    <p>オンにすると、作品ページ右下の記録ボタンとポップアップからの記録で画像を取得します。作品画像は個人的な閲覧の範囲で扱い、無断転載・共有・再配布をしないでください。</p>
+    <h2 data-i18n="includeImagesQuestion">Include images in the archive?</h2>
+    <p data-i18n="includeImagesNotice">When enabled, the record button on artwork pages and the extension popup download images. Keep artwork images for personal viewing; do not repost, share, or redistribute them.</p>
     <div class="consent-actions">
-      <button id="image-consent-cancel">キャンセル</button>
-      <button id="image-consent-agree" class="primary">有効にする</button>
+      <button id="image-consent-cancel" data-i18n="cancel">Cancel</button>
+      <button id="image-consent-agree" class="primary" data-i18n="enable">Enable</button>
     </div>
   </dialog>
   <dialog id="onboarding" class="onboarding-dialog">
-    <div class="onboarding-badge">はじめに</div>
-    <h2>使い方</h2>
+    <div class="onboarding-badge" data-i18n="gettingStarted">Getting started</div>
+    <h2 data-i18n="guide">Guide</h2>
     <ol class="onboarding-steps">
-      <li><span>1</span><div><strong>記録内容を選ぶ</strong><p>初期設定はメタデータのみです。</p></div></li>
-      <li><span>2</span><div><strong>必要なら記録先を選ぶ</strong><p>画像を含める場合はフォルダーを指定します。</p></div></li>
-      <li><span>3</span><div><strong>作品を記録する</strong><p>作品ページ右下の「記録」ボタンを押します。</p></div></li>
-      <li><span>4</span><div><strong>記録一覧で確認する</strong><p>検索や元作品を探すための機能を利用できます。</p></div></li>
+      <li><span>1</span><div><strong data-i18n="guideChooseContents">Choose what to record</strong><p data-i18n="guideMetadataDefault">The default is metadata only.</p></div></li>
+      <li><span>2</span><div><strong data-i18n="guideChooseFolder">Choose a folder if needed</strong><p data-i18n="guideFolderDetail">Select a folder when including images.</p></div></li>
+      <li><span>3</span><div><strong data-i18n="guideRecordArtwork">Record an artwork</strong><p data-i18n="guideRecordDetail">Press Record at the bottom right of an artwork page.</p></div></li>
+      <li><span>4</span><div><strong data-i18n="guideReviewArchive">Review your archive</strong><p data-i18n="guideReviewDetail">Use search and source-finding tools from the archive.</p></div></li>
     </ol>
-    <p class="onboarding-tip"><strong>ヒント</strong> このページをブックマークすると便利です。</p>
-    <p class="onboarding-reopen">使い方は画面右下から再表示できます。</p>
-    <button id="onboarding-close" class="primary">はじめる</button>
+    <p class="onboarding-tip"><strong data-i18n="tip">Tip</strong> <span data-i18n="bookmarkTip">Bookmark this page for quick access.</span></p>
+    <p class="onboarding-reopen" data-i18n="reopenGuide">You can reopen this guide from the bottom right.</p>
+    <button id="onboarding-close" class="primary" data-i18n="getStarted">Get started</button>
   </dialog>
   <template id="work-card-template">
     <article tabindex="0" role="group">
-      <label class="select-work"><input type="checkbox" aria-label="作品を選択"><span aria-hidden="true"></span></label>
+      <label class="select-work"><input type="checkbox" aria-label="Select artwork" data-i18n-attrs="aria-label:selectArtwork"><span aria-hidden="true"></span></label>
       <div class="thumb">
-        <div class="thumb-content">画像を表示</div>
-        <button type="button" class="favorite-button" aria-pressed="false" aria-label="お気に入りに追加">
+        <div class="thumb-content" data-i18n="showImage">Show image</div>
+        <button type="button" class="favorite-button" aria-pressed="false" aria-label="Add to favorites" data-i18n-attrs="aria-label:addFavorite">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5 4.3 13A5.2 5.2 0 0 1 12 6a5.2 5.2 0 0 1 7.7 7Z"></path></svg>
         </button>
         <details class="card-menu">
-          <summary aria-label="作品メニュー" title="メニュー"></summary>
+          <summary aria-label="Artwork menu" title="Menu" data-i18n-attrs="aria-label:artworkMenu,title:menu"></summary>
           <div class="card-menu-items">
-            <button data-metadata>メタデータを表示</button>
-            <a data-source target="_blank" rel="noreferrer">元ページを開く</a>
-            <a data-google target="_blank" rel="noreferrer">Googleで検索</a>
-            <button data-delete class="menu-delete">一覧から削除</button>
+            <button data-metadata data-i18n="showMetadata">Show metadata</button>
+            <a data-source target="_blank" rel="noreferrer" data-i18n="openSourcePage">Open source page</a>
+            <a data-google target="_blank" rel="noreferrer" data-i18n="searchGoogle">Search with Google</a>
+            <button data-delete class="menu-delete" data-i18n="deleteFromArchive">Delete from archive</button>
           </div>
         </details>
       </div>

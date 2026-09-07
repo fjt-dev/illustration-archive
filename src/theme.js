@@ -13,7 +13,7 @@ export async function initTheme(button) {
 }
 
 export async function setTheme(theme, button) {
-  if (!THEMES.has(theme)) throw new Error("未対応のテーマです");
+  if (!THEMES.has(theme)) throw new Error(message("unsupportedTheme"));
   await chrome.storage.local.set({ [THEME_KEY]: theme });
   applyTheme(theme, button);
   return theme;
@@ -33,17 +33,18 @@ function updateButton(button, selectedTheme = "system") {
   if (!button) return;
   if (button.querySelector("[data-theme-current-icon]")) {
     const labels = {
-      light: "ライトモード",
-      dark: "ダークモード",
-      system: "デバイスのデフォルト"
+      light: message("lightMode"),
+      dark: message("darkMode"),
+      system: message("systemDefault")
     };
     button.dataset.selectedTheme = selectedTheme;
-    button.title = `表示: ${labels[selectedTheme]}`;
-    button.setAttribute("aria-label", `表示テーマ: ${labels[selectedTheme]}`);
+    button.title = message("displayTheme", labels[selectedTheme]);
+    button.setAttribute("aria-label", message("displayThemeAria", labels[selectedTheme]));
     return;
   }
   const dark = effectiveTheme() === "dark";
   button.textContent = dark ? "🌙" : "☀️";
-  button.title = dark ? "ライトモードに切り替える" : "ダークモードに切り替える";
-  button.setAttribute("aria-label", dark ? "ライトモードに切り替える" : "ダークモードに切り替える");
+  button.title = dark ? message("switchToLight") : message("switchToDark");
+  button.setAttribute("aria-label", dark ? message("switchToLight") : message("switchToDark"));
 }
+import { message } from "./i18n.js";

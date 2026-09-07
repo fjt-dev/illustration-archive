@@ -11,6 +11,7 @@ function renderAtOffset(mode, reset) {
   const items = Array.from({ length: 110 }, (_, id) => ({ id }));
   const context = {
     works: items, summary: {}, formatBytes: () => '', renderTagFilters() {},
+    message: (_key, values) => Array.isArray(values) ? values.join(' ') : String(values || ''),
     scrollObserver: { disconnect() {} }, thumbnailObserver: { disconnect() {} },
     viewMode: mode, renderedCount: 108, BATCH_SIZE: 36,
     document: { querySelectorAll: () => [] },

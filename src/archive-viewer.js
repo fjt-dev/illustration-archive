@@ -1,6 +1,7 @@
 import { getImage } from "./db.js";
 import { readArchiveImage } from "./folder.js";
 import { formatBytes, formatDate, htmlToPlainText } from "./utils.js";
+import { message } from "./i18n.js";
 
 export function createArchiveViewer(panel, content, metadataDialog, metadataContent) {
   let activeObjectUrl = "";
@@ -46,13 +47,13 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
 
   async function loadThumbnail(node, work) {
     if (work.imageCount === 0) {
-      node.textContent = "画像なし";
+      node.textContent = message("noImage");
       return;
     }
     let image;
     try { image = await loadStoredImage(work, 0); }
     catch {
-      node.textContent = "画像を読み込めません";
+      node.textContent = message("imageLoadFailed");
       return;
     }
     if (!image || !node.isConnected) return;
@@ -97,21 +98,21 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
 
     const stage = document.createElement("div");
     stage.className = "viewer-stage";
-    stage.textContent = "読み込み中…";
+    stage.textContent = message("loading");
     const controls = createPageControls(work.imageCount, hasAdjacentWork);
     content.replaceChildren(heading, stage, controls.root);
 
     const renderPage = async (index) => {
       controls.setLoading(true);
-      stage.textContent = "読み込み中…";
+      stage.textContent = message("loading");
       releaseObjectUrl();
       try {
         const image = await loadStoredImage(work, index);
         if (token !== renderToken) return;
-        if (!image) throw new Error("画像を読み込めません");
+        if (!image) throw new Error(message("imageLoadFailed"));
         activeObjectUrl = URL.createObjectURL(image.blob);
         const node = new Image();
-        node.alt = `${work.title} ${index + 1}ページ目`;
+        node.alt = message("artworkPageAlt", [work.title, String(index + 1)]);
         node.src = activeObjectUrl;
         stage.replaceChildren(node);
         controls.setIndex(index);
@@ -143,12 +144,12 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     root.className = "viewer-controls";
     const previous = document.createElement("button");
     previous.type = "button";
-    previous.setAttribute("aria-label", "前の画像");
+    previous.setAttribute("aria-label", message("previousImage"));
     previous.textContent = "←";
     const status = document.createElement("span");
     const next = document.createElement("button");
     next.type = "button";
-    next.setAttribute("aria-label", "次の画像");
+    next.setAttribute("aria-label", message("nextImage"));
     next.textContent = "→";
     const pagination = document.createElement("div");
     pagination.className = "viewer-pagination";
@@ -186,14 +187,14 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     const trigger = document.createElement("button");
     trigger.type = "button";
     trigger.className = "viewer-heading-trigger";
-    const creatorName = work.creatorName || "作者不明";
-    trigger.setAttribute("aria-label", `作者: ${creatorName}。作品情報を表示`);
+    const creatorName = work.creatorName || message("unknownArtist");
+    trigger.setAttribute("aria-label", message("artistDetailsAria", creatorName));
     const icon = document.createElement("span");
     icon.className = "viewer-heading-icon";
     icon.setAttribute("aria-hidden", "true");
     const label = document.createElement("span");
     label.className = "viewer-heading-label";
-    label.textContent = `作者: ${creatorName}`;
+    label.textContent = message("artistLabel", creatorName);
     trigger.append(icon, label);
     const details = document.createElement("div");
     details.className = "viewer-heading-details";
@@ -201,14 +202,14 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     title.textContent = work.title;
     const creator = document.createElement("p");
     creator.className = "viewer-creator";
-    creator.textContent = `作成者: ${work.creatorName || "作者不明"}`;
+    creator.textContent = message("creatorLabel", work.creatorName || message("unknownArtist"));
     const source = document.createElement("div");
     source.className = "viewer-source";
     const workId = document.createElement("span");
     workId.textContent = `ID: ${work.id}`;
     source.append(workId);
     const sourceUrl = sourceUrlFor(work);
-    if (sourceUrl) source.append(externalLink("作品ページを開く", sourceUrl));
+    if (sourceUrl) source.append(externalLink(message("openArtworkPageLink"), sourceUrl));
     details.append(title, creator, source);
     heading.append(trigger, details);
     return heading;
@@ -218,21 +219,21 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     const recovery = document.createElement("section");
     recovery.className = "recovery-panel";
     const title = document.createElement("h3");
-    title.textContent = "元画像を探す";
-    const message = document.createElement("p");
-    message.textContent = work.imageCount > 0
-      ? "記録した画像を読み込めませんでした。作品情報を使って公開元や関連ページを検索できます。"
-      : "画像は記録されていません。記録した作品情報を使って元画像を検索できます。";
+    title.textContent = message("findOriginalImage");
+    const explanation = document.createElement("p");
+    explanation.textContent = work.imageCount > 0
+      ? message("recordedImageUnavailable")
+      : message("imageNotRecorded");
     const actions = document.createElement("div");
     actions.className = "recovery-actions";
     const sourceUrl = sourceUrlFor(work);
     const query = searchQueryFor(work);
-    if (sourceUrl) actions.append(externalLink("元作品ページを開く", sourceUrl));
+    if (sourceUrl) actions.append(externalLink(message("openOriginalPage"), sourceUrl));
     actions.append(
-      externalLink("Googleで検索", `https://www.google.com/search?q=${encodeURIComponent(query)}`),
-      externalLink("Google画像検索", `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(query)}`)
+      externalLink(message("searchGoogle"), `https://www.google.com/search?q=${encodeURIComponent(query)}`),
+      externalLink(message("searchGoogleImages"), `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(query)}`)
     );
-    recovery.append(title, message, actions);
+    recovery.append(title, explanation, actions);
     return recovery;
   }
 
@@ -258,16 +259,16 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
 
   function showMetadata(work) {
     const title = document.createElement("h2");
-    title.textContent = "記録メタデータ";
+    title.textContent = message("archivedMetadata");
     const fields = [
-      ["作品ID", work.id], ["タイトル", work.title], ["作者", work.creatorName || "不明"],
-      ["作者ID", work.creatorId || "不明"], ["タグ", work.tags?.length ? work.tags.join(" / ") : "なし"],
-      ["説明", htmlToPlainText(work.description) || "なし"], ["投稿日", formatDate(work.postedAt)],
-      ["記録日時", formatDate(work.archivedAt)], ["ページ数", `${work.pageCount || work.imageCount || 0}ページ`],
-      ["記録内容", work.imageCount > 0 ? "メタデータと画像" : "メタデータのみ"],
-      ["記録容量", formatBytes(work.byteSize)],
-      ["元画像ファイル名", work.originalImageFileNames?.join(" / ") || "記録なし"],
-      ["元URL", work.sourceUrl || "なし"]
+      [message("artworkId"), work.id], [message("title"), work.title], [message("artist"), work.creatorName || message("unknown")],
+      [message("artistId"), work.creatorId || message("unknown")], [message("tags"), work.tags?.length ? work.tags.join(" / ") : message("none")],
+      [message("description"), htmlToPlainText(work.description) || message("none")], [message("postedAt"), formatDate(work.postedAt)],
+      [message("archivedAt"), formatDate(work.archivedAt)], [message("pageCount"), message("pages", String(work.pageCount || work.imageCount || 0))],
+      [message("recordContents"), work.imageCount > 0 ? message("metadataAndImagesLong") : message("metadataOnly")],
+      [message("archiveSize"), formatBytes(work.byteSize)],
+      [message("originalImageFilenames"), work.originalImageFileNames?.join(" / ") || message("notRecorded")],
+      [message("sourceUrl"), work.sourceUrl || message("none")]
     ];
     const list = document.createElement("dl");
     list.className = "metadata-list";

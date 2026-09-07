@@ -1,3 +1,5 @@
+import { message } from "./i18n.js";
+
 const DB_NAME = "pixiv-local-archive";
 const DB_VERSION = 1;
 const WORKS = "works";
@@ -89,7 +91,7 @@ export async function updateWorkMetadata(workId, metadata) {
   const work = await requestResult(store.get(workId));
   if (!work) {
     db.close();
-    throw new Error("記録済み作品が見つかりませんでした");
+    throw new Error(message("archivedArtworkNotFound"));
   }
   store.put({ ...work, ...metadata });
   await complete(tx);
