@@ -10,7 +10,7 @@ import {
 import { initTheme, setTheme } from "./theme.js";
 import { formatBytes } from "./utils.js";
 import { createArchiveViewer } from "./archive-viewer.js";
-import { localizeDocument, message } from "./i18n.js";
+import { catalogLocale, localizeDocument, message } from "./i18n.js";
 import {
   completeOnboarding,
   disableImageRecording,
@@ -28,7 +28,7 @@ const sortMenu = document.querySelector("#sort-menu");
 const sortToggle = document.querySelector("#sort-toggle");
 const sortToggleLabel = document.querySelector("#sort-toggle-label");
 const tagFilters = document.querySelector("#tag-filters");
-const uiLocale = chrome.i18n.getUILanguage();
+const uiLocale = catalogLocale();
 let selectedTheme = await initTheme(themeButton);
 updateThemeOptions();
 themeMenu.addEventListener("click", async (event) => {

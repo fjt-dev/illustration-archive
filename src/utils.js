@@ -1,4 +1,4 @@
-import { message } from "./i18n.js";
+import { catalogLocale, message } from "./i18n.js";
 
 export function formatBytes(value = 0) {
   if (value < 1024 ** 2) return `${(value / 1024).toFixed(1)} KB`;
@@ -9,7 +9,7 @@ export function formatBytes(value = 0) {
 export function formatDate(value) {
   if (!value) return message("unknown");
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString(chrome.i18n.getUILanguage());
+  return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString(catalogLocale());
 }
 
 export function htmlToPlainText(value = "") {
