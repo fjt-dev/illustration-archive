@@ -65,6 +65,7 @@ test('failed persistence restores both buttons and permits retry', async () => {
   }
   assert.equal(context.error, 'Save failed');
   assert.equal(context.pendingFavorites.size, 0);
+  assert.equal(context.filterUpdates, 0);
 });
 
 test('a button created during a save reflects the pending state without affecting other works', async () => {
@@ -85,7 +86,7 @@ test('a button created during a save reflects the pending state without affectin
   assert.equal(other.attributes['aria-pressed'], 'false');
 });
 
-function setupViewer() {
+function setupViewer(getReturnFocus) {
   const source = readFileSync(join(__dirname, '../src/archive-viewer.js'), 'utf8')
     .replace(/^import .*;\n/gm, '').replace('export function', 'function');
   class TestElement {
@@ -122,7 +123,7 @@ function setupViewer() {
   vm.runInContext(source, context);
   const viewer = context.createArchiveViewer(panel, content, element(), element(), {
     createFavoriteButton(work) { const node = element(); node.workId = work.id; return node; },
-    getReturnFocus: () => returnControl
+    getReturnFocus: getReturnFocus || (() => returnControl)
   });
   return {
     viewer, content, panel, close, returnControl, element,
@@ -243,3 +244,56 @@ test('closing still restores a connected original focus target without a delayed
   flushFrames();
   assert.equal(document.activeElement, card);
 });
+
+test('closing with a hidden Favorites filter returns focus to search', async () => {
+  const source = readFileSync(join(__dirname, '../src/archive.js'), 'utf8');
+  let favoriteFilter = null;
+  const filterContainer = { hidden: false };
+  const archiveContext = {
+    document: { querySelector: () => favoriteFilter }, searchInput: null
+  };
+  vm.createContext(archiveContext);
+  vm.runInContext(source.slice(source.indexOf('function getArchiveReturnFocus()'), source.indexOf('function createFavoriteButton(')), archiveContext);
+  const { viewer, content, element, document, flushFrames } = setupViewer(() => archiveContext.getArchiveReturnFocus());
+  const search = element();
+  archiveContext.searchInput = search;
+  assert.equal(archiveContext.getArchiveReturnFocus(), search);
+  favoriteFilter = element();
+  favoriteFilter.getClientRects = () => filterContainer.hidden ? [] : [{}];
+  assert.equal(archiveContext.getArchiveReturnFocus(), favoriteFilter);
+  // Selection hides the filter's parent but leaves the filter itself in the DOM.
+  filterContainer.hidden = true;
+  assert.equal(archiveContext.getArchiveReturnFocus(), search);
+  const card = element();
+  card.focus();
+  const works = [{ id: 'a', imageCount: 0 }];
+  await viewer.showImages(works[0], { works, index: 0 });
+  flushFrames();
+  card.isConnected = false;
+  content.children[1].focus();
+  viewer.updateNavigation([]);
+  assert.equal(document.activeElement, search);
+});
+
+for (const buttonIndex of [0, 1]) {
+  test(`failed unfavorite preserves the filtered view and allows a successful retry (button ${buttonIndex})`, async () => {
+    let fail = true;
+    const { context, buttons, work } = setup(async () => {
+      if (fail) throw new Error('Save failed');
+    });
+    work.favorite = true;
+    context.syncFavoriteButtons(work);
+    await buttons[buttonIndex].click();
+    assert.equal(work.favorite, true);
+    assert.equal(context.filterUpdates, 0);
+    assert.equal(context.pendingFavorites.size, 0);
+    for (const b of buttons) {
+      assert.equal(b.attributes['aria-pressed'], 'true');
+      assert.equal(b.attributes['aria-disabled'], 'false');
+    }
+    fail = false;
+    await buttons[buttonIndex].click();
+    assert.equal(work.favorite, false);
+    assert.equal(context.filterUpdates, 1);
+  });
+}

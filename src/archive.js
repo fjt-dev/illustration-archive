@@ -82,7 +82,7 @@ const archiveViewer = createArchiveViewer(
   document.querySelector("#metadata-content"),
   {
     createFavoriteButton,
-    getReturnFocus: () => document.querySelector(".favorite-filter") || searchInput
+    getReturnFocus: getArchiveReturnFocus
   }
 );
 let works = await listWorks();
@@ -557,6 +557,11 @@ function card(work) {
   return article;
 }
 
+function getArchiveReturnFocus() {
+  const favoriteFilter = document.querySelector(".favorite-filter");
+  return favoriteFilter?.getClientRects().length ? favoriteFilter : searchInput;
+}
+
 function createFavoriteButton(work) {
   const button = document.querySelector("#work-card-template").content
     .querySelector(".favorite-button").cloneNode(true);
@@ -585,6 +590,7 @@ function bindFavoriteButton(button, work) {
       work.favorite = previous;
       button.classList.remove("favorite-pop", "favorite-release");
       alert(error.message);
+      return;
     } finally {
       pendingFavorites.delete(work.id);
       syncFavoriteButtons(work);
