@@ -88,27 +88,48 @@ test('a button created during a save reflects the pending state without affectin
 function setupViewer() {
   const source = readFileSync(join(__dirname, '../src/archive-viewer.js'), 'utf8')
     .replace(/^import .*;\n/gm, '').replace('export function', 'function');
-  const element = () => ({
-    ...button(), children: [], hidden: false,
-    append(...nodes) { this.children.push(...nodes); },
-    replaceChildren(...nodes) { this.children = nodes; }
-  });
-  const panel = element(), content = element();
-  const keys = {};
+  class TestElement {
+    constructor() {
+      Object.assign(this, button());
+      this.children = [];
+      this.hidden = false;
+      this.isConnected = true;
+    }
+    append(...nodes) { this.children.push(...nodes); }
+    contains(node) { return this === node || this.children.some(child => child.contains?.(node)); }
+    replaceChildren(...nodes) {
+      if (this.contains(context.document.activeElement)) context.document.activeElement = null;
+      this.children = nodes;
+    }
+    focus() { context.document.activeElement = this; }
+  }
+  const element = () => new TestElement();
+  const panel = element(), content = element(), close = element(), returnControl = element();
+  panel.hidden = true;
+  panel.querySelector = () => close;
+  const keys = {}, frames = [];
   const context = {
     document: {
+      activeElement: null,
       createElement: element, addEventListener(type, fn) { keys[type] = fn; },
       documentElement: { classList: { add() {}, remove() {} } }
     },
+    requestAnimationFrame: fn => frames.push(fn),
     message: key => key, getImage: async () => null, readArchiveImage: async () => null,
-    Element: class {}, HTMLElement: class {}, URL: { revokeObjectURL() {} }
+    Element: TestElement, HTMLElement: TestElement, URL: { revokeObjectURL() {} }
   };
   vm.createContext(context);
   vm.runInContext(source, context);
   const viewer = context.createArchiveViewer(panel, content, element(), element(), {
-    createFavoriteButton(work) { const node = element(); node.workId = work.id; return node; }
+    createFavoriteButton(work) { const node = element(); node.workId = work.id; return node; },
+    getReturnFocus: () => returnControl
   });
-  return { viewer, content, panel, step: key => keys.keydown({ key, preventDefault() {} }) };
+  return {
+    viewer, content, panel, close, returnControl, element,
+    document: context.document,
+    flushFrames: () => { while (frames.length) frames.shift()(); },
+    step: key => keys.keydown({ key, preventDefault() {} })
+  };
 }
 
 test('viewer favorites follow artwork navigation and remain available when images are unavailable', async () => {
@@ -185,4 +206,40 @@ test('applying favorites filters passes the sorted results to the open viewer', 
   context.applyFilters();
   assert.equal(received.length, 1);
   assert.equal(received[0].id, 'b');
+});
+
+for (const imageCount of [0, 1]) {
+  test(`replacing a focused favorite keeps keyboard focus inside the viewer (${imageCount} images)`, async () => {
+    const { viewer, content, close, document, flushFrames } = setupViewer();
+    const works = ['a', 'b'].map(id => ({ id, imageCount }));
+    await viewer.showImages(works[0], { works, index: 0 });
+    flushFrames();
+    content.children[1].focus();
+    viewer.updateNavigation([works[1]]);
+    assert.equal(content.children[1].workId, 'b');
+    assert.equal(document.activeElement, close);
+  });
+}
+
+test('closing after the originating card is removed restores focus to an archive control', async () => {
+  const { viewer, content, element, returnControl, document, flushFrames } = setupViewer();
+  const card = element();
+  card.focus();
+  const works = [{ id: 'a', imageCount: 0 }];
+  await viewer.showImages(works[0], { works, index: 0 });
+  flushFrames();
+  card.isConnected = false;
+  content.children[1].focus();
+  viewer.updateNavigation([]);
+  assert.equal(document.activeElement, returnControl);
+});
+
+test('closing still restores a connected original focus target without a delayed focus steal', async () => {
+  const { viewer, element, document, flushFrames } = setupViewer();
+  const card = element();
+  card.focus();
+  await viewer.showImages({ id: 'a', imageCount: 0 });
+  viewer.close();
+  flushFrames();
+  assert.equal(document.activeElement, card);
 });

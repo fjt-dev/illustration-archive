@@ -3,7 +3,7 @@ import { readArchiveImage } from "./folder.js";
 import { formatBytes, formatDate, htmlToPlainText } from "./utils.js";
 import { message } from "./i18n.js";
 
-export function createArchiveViewer(panel, content, metadataDialog, metadataContent, { createFavoriteButton } = {}) {
+export function createArchiveViewer(panel, content, metadataDialog, metadataContent, { createFavoriteButton, getReturnFocus } = {}) {
   let activeObjectUrl = "";
   let renderToken = 0;
   let previousFocus = null;
@@ -14,7 +14,9 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     previousFocus = wasHidden ? document.activeElement : previousFocus;
     panel.hidden = false;
     document.documentElement.classList.add("viewer-open");
-    if (wasHidden) requestAnimationFrame(() => panel.querySelector("#close")?.focus());
+    if (wasHidden) requestAnimationFrame(() => {
+      if (!panel.hidden) panel.querySelector("#close")?.focus();
+    });
   }
 
   function closeViewer() {
@@ -25,8 +27,17 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     document.documentElement.classList.remove("viewer-open");
     activeStep = null;
     activeNavigation = null;
-    if (previousFocus instanceof HTMLElement && previousFocus.isConnected) previousFocus.focus();
+    const returnFocus = previousFocus instanceof HTMLElement && previousFocus.isConnected
+      ? previousFocus : getReturnFocus?.();
+    returnFocus?.focus();
     previousFocus = null;
+  }
+
+  function replaceViewerContent(...nodes) {
+    const hadFocus = content.contains(document.activeElement);
+    content.replaceChildren(...nodes);
+    // The close button survives artwork changes, unlike the heart and page controls.
+    if (hadFocus) panel.querySelector("#close")?.focus();
   }
 
   let activeStep = null;
@@ -108,7 +119,7 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     };
 
     if (work.imageCount === 0) {
-      content.replaceChildren(...header, createRecoveryPanel(work));
+      replaceViewerContent(...header, createRecoveryPanel(work));
       activeStep = (delta) => goToAdjacentWork(delta);
       return;
     }
@@ -123,7 +134,7 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     stage.className = "viewer-stage";
     stage.textContent = message("loading");
     controls = createPageControls(work.imageCount, hasAdjacentWork);
-    content.replaceChildren(...header, stage, controls.root);
+    replaceViewerContent(...header, stage, controls.root);
 
     const renderPage = async (index) => {
       controls.setLoading(true);

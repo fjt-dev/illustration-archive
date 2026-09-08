@@ -80,7 +80,10 @@ const archiveViewer = createArchiveViewer(
   document.querySelector("#viewer-content"),
   metadataViewer,
   document.querySelector("#metadata-content"),
-  { createFavoriteButton }
+  {
+    createFavoriteButton,
+    getReturnFocus: () => document.querySelector(".favorite-filter") || searchInput
+  }
 );
 let works = await listWorks();
 let visibleWorks = works;
