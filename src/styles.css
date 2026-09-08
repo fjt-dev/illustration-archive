@@ -662,3 +662,35 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
 .archive-page header > div:first-child { flex-shrink: 0; }
 
 .archive-page .page-links { max-width: calc(100vw - 40px); box-sizing: border-box; flex-wrap: wrap; justify-content: flex-end; gap: 8px 14px; }
+
+/* Favorite feedback is shared by archive cards and the full-screen viewer. */
+.favorite-button.favorite-pop svg { animation: favorite-pop 420ms ease-out; }
+.favorite-button.favorite-release svg { animation: favorite-release 240ms ease-out; }
+@keyframes favorite-pop {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.35) rotate(-10deg); }
+  65% { transform: scale(.92) rotate(5deg); }
+  100% { transform: scale(1.04); }
+}
+@keyframes favorite-release {
+  45% { transform: scale(.78); }
+  100% { transform: scale(1); }
+}
+/* Keep the heart above the next arrow, clear of the page counter on the left. */
+#viewer .viewer-favorite {
+  top: auto;
+  right: 28px;
+  bottom: 92px;
+  z-index: 3;
+  width: 54px;
+  height: 54px;
+}
+#viewer .viewer-favorite svg { width: 29px; height: 29px; }
+@media (max-width: 650px) {
+  #viewer .viewer-favorite { top: auto; right: 14px; bottom: 72px; width: 46px; height: 46px; }
+  #viewer-content .viewer-heading { max-width: min(280px, calc(100vw - 88px)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .favorite-button, .favorite-button svg { transition: none; }
+  .favorite-button.favorite-pop svg, .favorite-button.favorite-release svg { animation: none; }
+}

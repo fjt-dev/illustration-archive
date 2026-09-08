@@ -3,7 +3,7 @@ import { readArchiveImage } from "./folder.js";
 import { formatBytes, formatDate, htmlToPlainText } from "./utils.js";
 import { message } from "./i18n.js";
 
-export function createArchiveViewer(panel, content, metadataDialog, metadataContent) {
+export function createArchiveViewer(panel, content, metadataDialog, metadataContent, { createFavoriteButton } = {}) {
   let activeObjectUrl = "";
   let renderToken = 0;
   let previousFocus = null;
@@ -71,6 +71,9 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     releaseObjectUrl();
     openViewer();
     const heading = createViewerHeading(work);
+    const favorite = createFavoriteButton?.(work);
+    if (favorite) favorite.classList.add("viewer-favorite");
+    const header = favorite ? [heading, favorite] : [heading];
 
     const goToAdjacentWork = (delta) => {
       if (!works || index < 0) return false;
@@ -85,7 +88,7 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     };
 
     if (work.imageCount === 0) {
-      content.replaceChildren(heading, createRecoveryPanel(work));
+      content.replaceChildren(...header, createRecoveryPanel(work));
       activeStep = (delta) => goToAdjacentWork(delta);
       return;
     }
@@ -100,7 +103,7 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     stage.className = "viewer-stage";
     stage.textContent = message("loading");
     const controls = createPageControls(work.imageCount, hasAdjacentWork);
-    content.replaceChildren(heading, stage, controls.root);
+    content.replaceChildren(...header, stage, controls.root);
 
     const renderPage = async (index) => {
       controls.setLoading(true);
