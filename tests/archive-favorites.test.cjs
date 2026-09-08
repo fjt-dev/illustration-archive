@@ -85,7 +85,7 @@ test('a button created during a save reflects the pending state without affectin
   assert.equal(other.attributes['aria-pressed'], 'false');
 });
 
-test('viewer favorites follow artwork navigation and remain available when images are unavailable', async () => {
+function setupViewer() {
   const source = readFileSync(join(__dirname, '../src/archive-viewer.js'), 'utf8')
     .replace(/^import .*;\n/gm, '').replace('export function', 'function');
   const element = () => ({
@@ -108,14 +108,81 @@ test('viewer favorites follow artwork navigation and remain available when image
   const viewer = context.createArchiveViewer(panel, content, element(), element(), {
     createFavoriteButton(work) { const node = element(); node.workId = work.id; return node; }
   });
+  return { viewer, content, panel, step: key => keys.keydown({ key, preventDefault() {} }) };
+}
+
+test('viewer favorites follow artwork navigation and remain available when images are unavailable', async () => {
+  const { viewer, content, panel, step } = setupViewer();
   const works = [{ id: '1', imageCount: 0 }, { id: '2', imageCount: 1 }];
   await viewer.showImages(works[0], { works, index: 0 });
   assert.equal(content.children[1].workId, '1');
-  keys.keydown({ key: 'ArrowRight', preventDefault() {} });
+  step('ArrowRight');
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(content.children[1].workId, '2');
   assert.equal(content.children[2].children[0].className, 'recovery-panel');
   viewer.close();
   assert.equal(panel.hidden, true);
   assert.equal(content.children.length, 0);
+});
+
+for (const removedIndex of [0, 1, 2]) {
+  test(`filter refresh excludes removed artwork at position ${removedIndex} from navigation`, async () => {
+    const { viewer, content, step } = setupViewer();
+    const works = ['a', 'b', 'c'].map(id => ({ id, imageCount: 0 }));
+    await viewer.showImages(works[removedIndex], { works, index: removedIndex });
+    const remaining = works.filter((_, index) => index !== removedIndex);
+    viewer.updateNavigation(remaining);
+    assert.equal(content.children[1].workId, remaining[Math.min(removedIndex, 1)].id);
+    step('ArrowLeft');
+    assert.equal(content.children[1].workId, remaining[0].id);
+    step('ArrowRight');
+    assert.equal(content.children[1].workId, remaining[1].id);
+    step('ArrowLeft');
+    assert.equal(content.children[1].workId, remaining[0].id);
+  });
+}
+
+test('removing the last matching artwork closes the viewer and clears navigation', async () => {
+  const { viewer, content, panel, step } = setupViewer();
+  const works = [{ id: 'a', imageCount: 0 }];
+  await viewer.showImages(works[0], { works, index: 0 });
+  viewer.updateNavigation([]);
+  assert.equal(panel.hidden, true);
+  step('ArrowRight');
+  assert.equal(content.children.length, 0);
+});
+
+test('refresh preserves the current page and updates arrow availability for surviving artworks', async () => {
+  const { viewer, content, step } = setupViewer();
+  const works = ['a', 'b'].map(id => ({ id, imageCount: 2 }));
+  await viewer.showImages(works[1], { works, index: 1 });
+  step('ArrowRight');
+  await new Promise(resolve => setImmediate(resolve));
+  const controls = content.children[3];
+  assert.equal(controls.children[0].children[0].textContent, '2 / 2');
+  viewer.updateNavigation([works[1]]);
+  assert.equal(content.children[3], controls);
+  assert.equal(controls.children[0].children[0].textContent, '2 / 2');
+  step('ArrowLeft');
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(controls.children[1].disabled, true);
+  viewer.updateNavigation([works[0], works[1]]);
+  assert.equal(controls.children[1].disabled, false);
+});
+
+test('applying favorites filters passes the sorted results to the open viewer', () => {
+  const source = readFileSync(join(__dirname, '../src/archive.js'), 'utf8');
+  let received;
+  const context = {
+    works: [{ id: 'a', favorite: false }, { id: 'b', favorite: true }],
+    activeTags: new Set(), searchQuery: '', favoriteOnly: true,
+    normalizeTag: tag => tag, sortOrder: 'archived-desc',
+    sortComparators: { 'archived-desc': () => 0 }, render() {},
+    archiveViewer: { updateNavigation(works) { received = works; } }
+  };
+  vm.createContext(context);
+  vm.runInContext(source.slice(source.indexOf('function applyFilters()'), source.indexOf('function render(')), context);
+  context.applyFilters();
+  assert.equal(received.length, 1);
+  assert.equal(received[0].id, 'b');
 });

@@ -351,6 +351,7 @@ function applyFilters() {
   });
   visibleWorks.sort(sortComparators[sortOrder] || sortComparators["archived-desc"]);
   render(visibleWorks, { reset: true });
+  archiveViewer.updateNavigation(visibleWorks);
 }
 
 function render(items, { reset = false } = {}) {

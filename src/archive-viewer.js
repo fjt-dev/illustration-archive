@@ -7,6 +7,7 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
   let activeObjectUrl = "";
   let renderToken = 0;
   let previousFocus = null;
+  let activeNavigation = null;
 
   function openViewer() {
     const wasHidden = panel.hidden;
@@ -23,6 +24,7 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     content.replaceChildren();
     document.documentElement.classList.remove("viewer-open");
     activeStep = null;
+    activeNavigation = null;
     if (previousFocus instanceof HTMLElement && previousFocus.isConnected) previousFocus.focus();
     previousFocus = null;
   }
@@ -74,6 +76,24 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     const favorite = createFavoriteButton?.(work);
     if (favorite) favorite.classList.add("viewer-favorite");
     const header = favorite ? [heading, favorite] : [heading];
+    let controls = null;
+
+    activeNavigation = (nextWorks) => {
+      const nextIndex = nextWorks.findIndex((item) => item.id === work.id);
+      if (nextIndex < 0) {
+        if (!nextWorks.length) {
+          closeViewer();
+          return;
+        }
+        // Continue at the removed artwork's position, or the last remaining work.
+        const replacementIndex = Math.min(Math.max(index, 0), nextWorks.length - 1);
+        showImages(nextWorks[replacementIndex], { works: nextWorks, index: replacementIndex });
+        return;
+      }
+      works = nextWorks;
+      index = nextIndex;
+      if (controls) controls.setLoading(controls.loading);
+    };
 
     const goToAdjacentWork = (delta) => {
       if (!works || index < 0) return false;
@@ -102,7 +122,7 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     const stage = document.createElement("div");
     stage.className = "viewer-stage";
     stage.textContent = message("loading");
-    const controls = createPageControls(work.imageCount, hasAdjacentWork);
+    controls = createPageControls(work.imageCount, hasAdjacentWork);
     content.replaceChildren(...header, stage, controls.root);
 
     const renderPage = async (index) => {
@@ -292,5 +312,9 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     activeObjectUrl = "";
   }
 
-  return { close: closeViewer, loadThumbnail, showImages, showMetadata };
+  function updateNavigation(works) {
+    activeNavigation?.(works);
+  }
+
+  return { close: closeViewer, loadThumbnail, showImages, showMetadata, updateNavigation };
 }
