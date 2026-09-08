@@ -3,17 +3,20 @@ import { readArchiveImage } from "./folder.js";
 import { formatBytes, formatDate, htmlToPlainText } from "./utils.js";
 import { message } from "./i18n.js";
 
-export function createArchiveViewer(panel, content, metadataDialog, metadataContent) {
+export function createArchiveViewer(panel, content, metadataDialog, metadataContent, { createFavoriteButton, getReturnFocus } = {}) {
   let activeObjectUrl = "";
   let renderToken = 0;
   let previousFocus = null;
+  let activeNavigation = null;
 
   function openViewer() {
     const wasHidden = panel.hidden;
     previousFocus = wasHidden ? document.activeElement : previousFocus;
     panel.hidden = false;
     document.documentElement.classList.add("viewer-open");
-    if (wasHidden) requestAnimationFrame(() => panel.querySelector("#close")?.focus());
+    if (wasHidden) requestAnimationFrame(() => {
+      if (!panel.hidden) panel.querySelector("#close")?.focus();
+    });
   }
 
   function closeViewer() {
@@ -23,8 +26,18 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     content.replaceChildren();
     document.documentElement.classList.remove("viewer-open");
     activeStep = null;
-    if (previousFocus instanceof HTMLElement && previousFocus.isConnected) previousFocus.focus();
+    activeNavigation = null;
+    const returnFocus = previousFocus instanceof HTMLElement && previousFocus.isConnected
+      ? previousFocus : getReturnFocus?.();
+    returnFocus?.focus();
     previousFocus = null;
+  }
+
+  function replaceViewerContent(...nodes) {
+    const hadFocus = content.contains(document.activeElement);
+    content.replaceChildren(...nodes);
+    // The close button survives artwork changes, unlike the heart and page controls.
+    if (hadFocus) panel.querySelector("#close")?.focus();
   }
 
   let activeStep = null;
@@ -71,6 +84,27 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     releaseObjectUrl();
     openViewer();
     const heading = createViewerHeading(work);
+    const favorite = createFavoriteButton?.(work);
+    if (favorite) favorite.classList.add("viewer-favorite");
+    const header = favorite ? [heading, favorite] : [heading];
+    let controls = null;
+
+    activeNavigation = (nextWorks) => {
+      const nextIndex = nextWorks.findIndex((item) => item.id === work.id);
+      if (nextIndex < 0) {
+        if (!nextWorks.length) {
+          closeViewer();
+          return;
+        }
+        // Continue at the removed artwork's position, or the last remaining work.
+        const replacementIndex = Math.min(Math.max(index, 0), nextWorks.length - 1);
+        showImages(nextWorks[replacementIndex], { works: nextWorks, index: replacementIndex });
+        return;
+      }
+      works = nextWorks;
+      index = nextIndex;
+      if (controls) controls.setLoading(controls.loading);
+    };
 
     const goToAdjacentWork = (delta) => {
       if (!works || index < 0) return false;
@@ -85,7 +119,7 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     };
 
     if (work.imageCount === 0) {
-      content.replaceChildren(heading, createRecoveryPanel(work));
+      replaceViewerContent(...header, createRecoveryPanel(work));
       activeStep = (delta) => goToAdjacentWork(delta);
       return;
     }
@@ -99,8 +133,8 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     const stage = document.createElement("div");
     stage.className = "viewer-stage";
     stage.textContent = message("loading");
-    const controls = createPageControls(work.imageCount, hasAdjacentWork);
-    content.replaceChildren(heading, stage, controls.root);
+    controls = createPageControls(work.imageCount, hasAdjacentWork);
+    replaceViewerContent(...header, stage, controls.root);
 
     const renderPage = async (index) => {
       controls.setLoading(true);
@@ -289,5 +323,9 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     activeObjectUrl = "";
   }
 
-  return { close: closeViewer, loadThumbnail, showImages, showMetadata };
+  function updateNavigation(works) {
+    activeNavigation?.(works);
+  }
+
+  return { close: closeViewer, loadThumbnail, showImages, showMetadata, updateNavigation };
 }

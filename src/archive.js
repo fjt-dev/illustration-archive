@@ -74,11 +74,16 @@ const shortcutsDialog = document.querySelector("#shortcuts-dialog");
 const archiveIncludeImages = document.querySelector("#archive-include-images");
 const imageRecordingConsent = document.querySelector("#image-recording-consent");
 const restoreFolderAccess = document.querySelector("#restore-folder-access");
+const pendingFavorites = new Set();
 const archiveViewer = createArchiveViewer(
   viewer,
   document.querySelector("#viewer-content"),
   metadataViewer,
-  document.querySelector("#metadata-content")
+  document.querySelector("#metadata-content"),
+  {
+    createFavoriteButton,
+    getReturnFocus: getArchiveReturnFocus
+  }
 );
 let works = await listWorks();
 let visibleWorks = works;
@@ -349,6 +354,7 @@ function applyFilters() {
   });
   visibleWorks.sort(sortComparators[sortOrder] || sortComparators["archived-desc"]);
   render(visibleWorks, { reset: true });
+  archiveViewer.updateNavigation(visibleWorks);
 }
 
 function render(items, { reset = false } = {}) {
@@ -517,26 +523,7 @@ function card(work) {
     else if (result?.error) alert(result.error);
     archiveViewer.showMetadata(work);
   });
-  const favoriteButton = article.querySelector(".favorite-button");
-  updateFavoriteButton(favoriteButton, work);
-  favoriteButton.addEventListener("click", async (event) => {
-    event.stopPropagation();
-    if (favoriteButton.dataset.saving === "true") return;
-    const previous = work.favorite === true;
-    work.favorite = !previous;
-    favoriteButton.dataset.saving = "true";
-    updateFavoriteButton(favoriteButton, work);
-    try {
-      await updateWorkMetadata(work.id, { favorite: work.favorite });
-      delete favoriteButton.dataset.saving;
-      if (favoriteOnly) applyFilters();
-    } catch (error) {
-      work.favorite = previous;
-      delete favoriteButton.dataset.saving;
-      updateFavoriteButton(favoriteButton, work);
-      alert(error.message);
-    }
-  });
+  bindFavoriteButton(article.querySelector(".favorite-button"), work);
   let thumbClickTimer = null;
   const thumbContent = article.querySelector(".thumb-content");
   thumbContent.addEventListener("click", () => {
@@ -570,10 +557,61 @@ function card(work) {
   return article;
 }
 
+function getArchiveReturnFocus() {
+  const favoriteFilter = document.querySelector(".favorite-filter");
+  return favoriteFilter?.getClientRects().length ? favoriteFilter : searchInput;
+}
+
+function createFavoriteButton(work) {
+  const button = document.querySelector("#work-card-template").content
+    .querySelector(".favorite-button").cloneNode(true);
+  bindFavoriteButton(button, work);
+  return button;
+}
+
+function bindFavoriteButton(button, work) {
+  button.dataset.workId = String(work.id);
+  updateFavoriteButton(button, work);
+  button.addEventListener("animationend", () => button.classList.remove("favorite-pop", "favorite-release"));
+  button.addEventListener("click", async (event) => {
+    event.stopPropagation();
+    if (pendingFavorites.has(work.id)) return;
+    const previous = work.favorite === true;
+    work.favorite = !previous;
+    pendingFavorites.add(work.id);
+    syncFavoriteButtons(work);
+    button.classList.remove("favorite-pop", "favorite-release");
+    // Restart the feedback even when the same button is toggled quickly.
+    void button.offsetWidth;
+    button.classList.add(work.favorite ? "favorite-pop" : "favorite-release");
+    try {
+      await updateWorkMetadata(work.id, { favorite: work.favorite });
+    } catch (error) {
+      work.favorite = previous;
+      button.classList.remove("favorite-pop", "favorite-release");
+      alert(error.message);
+      return;
+    } finally {
+      pendingFavorites.delete(work.id);
+      syncFavoriteButtons(work);
+    }
+    if (favoriteOnly) applyFilters();
+  });
+}
+
+function syncFavoriteButtons(work) {
+  document.querySelectorAll(".favorite-button").forEach((button) => {
+    if (button.dataset.workId === String(work.id)) updateFavoriteButton(button, work);
+  });
+}
+
 function updateFavoriteButton(button, work) {
   const favorite = work.favorite === true;
+  const label = favorite ? message("removeFavorite") : message("addFavorite");
   button.setAttribute("aria-pressed", String(favorite));
-  button.setAttribute("aria-label", favorite ? message("removeFavorite") : message("addFavorite"));
+  button.setAttribute("aria-label", label);
+  button.title = label;
+  button.setAttribute("aria-disabled", String(pendingFavorites.has(work.id)));
 }
 
 function showFolderName(handle) {

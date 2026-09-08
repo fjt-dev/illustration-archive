@@ -62,7 +62,7 @@ Firefox is not currently supported.
 - Select the four-square icon (**Hide titles**) at the top of the archive to switch to an image-focused square tile layout. Select the card icon with lines below the image (**Standard view**) to switch back. Hover over either icon to see its name.
 - Scrolling automatically loads 36 more artworks at a time. You can also select **Load more**.
 - Search, tags, favorites, and sorting remain active. Loading stops after all matching archived artworks are displayed, without repeating any artwork.
-- Select a tile to open the viewer at the image's original aspect ratio. The heart button is hidden in tile view, so change favorites in standard view. Selection and artwork menus are available in both modes.
+- Select a tile to open the viewer at the image's original aspect ratio. The heart button is hidden in tile view, so change favorites in standard view or in the image viewer. Selection and artwork menus are available in both modes.
 - Selection checkboxes appear on hover or keyboard focus and remain visible for selected artworks. They are always visible on touch devices.
 - The display mode is remembered for your next visit. **Select all** applies to the complete filtered result, including items that have not yet loaded.
 
@@ -70,6 +70,7 @@ Firefox is not currently supported.
 
 - The viewer displays the artwork image prominently in the center. Use the buttons at the bottom right to move between pages and artworks.
 - The bottom left shows the artwork title, artist, artwork ID, and a link to the source artwork page.
+- Select the heart above the bottom-right navigation arrows to add or remove the artwork from Favorites. The state stays in sync with the archive cards, with animated feedback that respects reduced-motion preferences.
 - Select **Close** at the top right or press Esc to return to the archive.
 - Use `←` / `→` to move between pages. At the first or last page of an artwork, navigation continues automatically to the previous or next artwork in the archive. The same behavior applies to single-page artworks.
 
