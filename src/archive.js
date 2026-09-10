@@ -94,6 +94,8 @@ let sortOrder = "archived-desc";
 updateSortOptions();
 const selectedIds = new Set();
 const BATCH_SIZE = 36;
+const COMMON_TAG_MIN_WORKS = 30;
+const COMMON_TAG_COVERAGE_THRESHOLD = 0.8;
 let renderedCount = 0;
 let viewMode = (await chrome.storage.local.get("archiveViewMode")).archiveViewMode === "infinite"
   ? "infinite" : "standard";
@@ -398,7 +400,7 @@ function appendNextBatch() {
 
 function renderTagFilters() {
   const allTags = popularTags();
-  const tags = allTags.slice(0, 20);
+  const tags = allTags.filter((tag) => !tag.hidden).slice(0, 20);
   const tagKeys = new Set(tags.map((tag) => tag.key));
   allTags.forEach((tag) => {
     if (!activeTags.has(tag.key) || tagKeys.has(tag.key)) return;
@@ -454,6 +456,7 @@ function renderTagFilters() {
 
 function popularTags() {
   const counts = new Map();
+  const workCount = works.length;
   works.forEach((work) => {
     const seen = new Set();
     (work.tags || []).forEach((rawTag) => {
@@ -466,8 +469,17 @@ function popularTags() {
       counts.set(key, entry);
     });
   });
-  return [...counts.values()]
-    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, uiLocale));
+  return [...counts.values()].map((tag) => {
+    const coverage = workCount ? tag.count / workCount : 0;
+    return {
+      ...tag,
+      coverage,
+      score: tag.count * Math.log((workCount + 1) / (tag.count + 1)),
+      hidden: workCount >= COMMON_TAG_MIN_WORKS && coverage >= COMMON_TAG_COVERAGE_THRESHOLD
+    };
+  }).sort((a, b) => b.score - a.score
+    || b.count - a.count
+    || a.label.localeCompare(b.label, uiLocale));
 }
 
 function normalizeTag(tag) {
