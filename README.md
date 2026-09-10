@@ -55,7 +55,7 @@ Firefox is not currently supported.
 - You can also **double-click** a thumbnail to open the viewer.
 - The **⋯** menu on each card lets you view metadata, open the source page, search with Google, or delete the artwork from the archive.
 - Use the sort menu next to the search box to sort by archive date, post date, title, artist name, or size.
-- The tag filters scroll horizontally, while the Favorites filter stays pinned to the left. If you select multiple tags, use **Reset tags** to clear them all at once.
+- The tag filters scroll horizontally, while the Favorites filter stays pinned to the left. Tags are ranked by how useful they are for narrowing the archive, and tags shared by at least 80% of 30 or more artworks are hidden. If you select multiple tags, use **Reset tags** to clear them all at once.
 
 ### Hide-titles mode
 
