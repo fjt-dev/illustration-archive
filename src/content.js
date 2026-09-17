@@ -1,6 +1,6 @@
 (() => {
 const INSTANCE_KEY = "__ILLUSTRATION_ARCHIVE_INSTANCE__";
-const CONTENT_SCRIPT_VERSION = 7;
+const CONTENT_SCRIPT_VERSION = 8;
 const message = (key, substitutions) => chrome.i18n.getMessage(key, substitutions) || key;
 try { globalThis[INSTANCE_KEY]?.dispose?.(); } catch {}
 
@@ -104,7 +104,11 @@ function updateRecordButton() {
   }
 }
 
-async function recordCurrentWork() {
+async function recordCurrentWork(event) {
+  // The host page shares this DOM and can dispatch synthetic events into it.
+  // Only a real user interaction may cross into the privileged extension flow.
+  if (!event?.isTrusted) return;
+  if (!confirm(message("confirmRecordArtwork"))) return;
   recordButton.disabled = true;
   recordButton.textContent = message("recording");
   try {

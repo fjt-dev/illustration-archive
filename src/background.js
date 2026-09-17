@@ -3,7 +3,41 @@ import { getArchiveFolder, saveArchiveToFolder } from "./folder.js";
 import { hasUsageConsent, shouldIncludeImages } from "./settings.js";
 import { message } from "./i18n.js";
 
-const CONTENT_SCRIPT_VERSION = 7;
+const CONTENT_SCRIPT_VERSION = 8;
+const IMAGE_HEADER_RULE_ID = 1;
+const MAX_IMAGE_COUNT = 200;
+const MAX_IMAGE_BYTES = 32 * 1024 * 1024;
+const MAX_TOTAL_IMAGE_BYTES = 256 * 1024 * 1024;
+const activeArchives = new Set();
+
+const imageHeaderRuleReady = configureImageHeaderRule();
+imageHeaderRuleReady.catch((error) => {
+  console.error("Illustration Archive: could not configure image request headers", error);
+});
+
+async function configureImageHeaderRule() {
+  await chrome.declarativeNetRequest.updateDynamicRules({
+    removeRuleIds: [IMAGE_HEADER_RULE_ID],
+    addRules: [{
+      id: IMAGE_HEADER_RULE_ID,
+      priority: 1,
+      action: {
+        type: "modifyHeaders",
+        requestHeaders: [{
+          header: "Referer",
+          operation: "set",
+          value: "https://www.pixiv.net/"
+        }]
+      },
+      condition: {
+        urlFilter: "|https://i.pximg.net/",
+        requestDomains: ["i.pximg.net"],
+        initiatorDomains: [chrome.runtime.id],
+        resourceTypes: ["xmlhttprequest"]
+      }
+    }]
+  });
+}
 
 chrome.runtime.onInstalled.addListener((details) => {
   ensureArtworkTabsConnected();
@@ -28,22 +62,52 @@ async function ensureArtworkTabsConnected() {
     }));
 }
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message.type === "COMPLETE_WORK_METADATA") {
-    completeStoredWorkMetadata(message.workId)
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request?.type === "COMPLETE_WORK_METADATA") {
+    if (!isExtensionPageSender(sender, "src/archive.html")) {
+      sendResponse({ ok: false, error: message("invalidMessageSender") });
+      return false;
+    }
+    completeStoredWorkMetadata(request.workId)
       .then((metadata) => sendResponse({ ok: true, metadata }))
       .catch((error) => sendResponse({ ok: false, error: error.message }));
     return true;
   }
-  if (message.type !== "ARCHIVE_WORK") return false;
-  archiveWork(message.work)
+  if (request?.type !== "ARCHIVE_WORK") return false;
+  if (!isArchiveSender(sender)) {
+    sendResponse({ ok: false, error: message("invalidMessageSender") });
+    return false;
+  }
+  archiveWorkOnce(request.work)
     .then((result) => sendResponse({ ok: true, ...result }))
     .catch((error) => sendResponse({ ok: false, error: error.message }));
   return true;
 });
 
+function isExtensionPageSender(sender, path) {
+  return sender?.id === chrome.runtime.id && sender.url === chrome.runtime.getURL(path);
+}
+
+function isArchiveSender(sender) {
+  if (sender?.id !== chrome.runtime.id) return false;
+  if (isExtensionPageSender(sender, "src/popup.html")) return true;
+  if (sender.frameId !== 0 || !Number.isInteger(sender.tab?.id)) return false;
+  const url = sender.tab.url || sender.url || "";
+  return /^https:\/\/www\.pixiv\.net\/artworks\/\d+(?:[/?#]|$)/.test(url);
+}
+
+async function archiveWorkOnce(rawWork) {
+  const work = normalizeWork(rawWork);
+  if (activeArchives.has(work.id)) throw new Error(message("archiveAlreadyInProgress"));
+  activeArchives.add(work.id);
+  try {
+    return await archiveWork(work);
+  } finally {
+    activeArchives.delete(work.id);
+  }
+}
+
 async function archiveWork(work, { metadataResolved = false } = {}) {
-  if (!work?.id) throw new Error(message("artworkIdFailed"));
   if (!await hasUsageConsent()) {
     throw new Error(message("consentRequired"));
   }
@@ -58,11 +122,12 @@ async function archiveWork(work, { metadataResolved = false } = {}) {
   const images = [];
   let imageReferences;
   if (includeImages) {
-    if (!metadataResolved) work = await enrichWorkMetadata(work);
+    await imageHeaderRuleReady;
+    if (!metadataResolved) work = normalizeWork(await enrichWorkMetadata(work));
     imageReferences = await getImageReferences(work.id, { required: true });
     images.push(...await downloadImages(imageReferences.originalImageUrls));
   } else {
-    if (!metadataResolved) work = await enrichWorkMetadata(work);
+    if (!metadataResolved) work = normalizeWork(await enrichWorkMetadata(work));
     imageReferences = embeddedImageReferences(work);
   }
 
@@ -105,9 +170,51 @@ async function archiveWork(work, { metadataResolved = false } = {}) {
   };
 }
 
+function normalizeWork(work) {
+  const id = String(work?.id || "");
+  if (!/^\d{1,20}$/.test(id)) throw new Error(message("artworkIdFailed"));
+  const tags = Array.isArray(work.tags)
+    ? work.tags.slice(0, 1000).map((tag) => safeString(tag, 500)).filter(Boolean)
+    : [];
+  const originalImageUrls = Array.isArray(work.originalImageUrls)
+    ? work.originalImageUrls.slice(0, MAX_IMAGE_COUNT).filter(isPixivImageUrl)
+    : [];
+  const originalImageFileNames = Array.isArray(work.originalImageFileNames)
+    ? work.originalImageFileNames.slice(0, MAX_IMAGE_COUNT).map((name) => safeString(name, 1000)).filter(Boolean)
+    : [];
+  return {
+    id,
+    sourceUrl: `https://www.pixiv.net/artworks/${id}`,
+    title: safeString(work.title, 1000) || `pixiv ${id}`,
+    creatorId: safeString(work.creatorId, 100),
+    creatorName: safeString(work.creatorName, 1000),
+    description: safeString(work.description, 100000),
+    tags,
+    postedAt: safeString(work.postedAt, 100),
+    pageCount: Math.max(0, Math.min(10000, Number(work.pageCount) || 0)),
+    originalImageUrls,
+    originalImageFileNames,
+    metadataComplete: work.metadataComplete === true
+  };
+}
+
+function safeString(value, maxLength) {
+  return typeof value === "string" ? value.slice(0, maxLength) : "";
+}
+
+function isPixivImageUrl(value) {
+  if (typeof value !== "string") return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && url.hostname === "i.pximg.net";
+  } catch {
+    return false;
+  }
+}
+
 function embeddedImageReferences(work) {
   const originalImageUrls = Array.isArray(work.originalImageUrls)
-    ? work.originalImageUrls.filter((url) => typeof url === "string" && url.startsWith("https://i.pximg.net/"))
+    ? work.originalImageUrls.filter(isPixivImageUrl)
     : [];
   const originalImageFileNames = Array.isArray(work.originalImageFileNames)
     ? work.originalImageFileNames.filter(Boolean)
@@ -155,7 +262,7 @@ function metadataForStorage(work) {
 async function completeStoredWorkMetadata(workId) {
   const work = await getWork(workId);
   if (!work) throw new Error(message("archivedArtworkNotFound"));
-  const enrichedWork = await enrichWorkMetadata(work, { required: true });
+  const enrichedWork = normalizeWork(await enrichWorkMetadata(work, { required: true }));
   const metadata = metadataForStorage(enrichedWork);
   await updateWorkMetadata(workId, metadata);
   return metadata;
@@ -207,10 +314,25 @@ function imageFileName(url) {
 
 async function downloadImages(urls) {
   const images = [];
+  let totalBytes = 0;
+  if (urls.length > MAX_IMAGE_COUNT) throw new Error(message("tooManyImages"));
   for (const url of urls) {
     const response = await fetch(url, { credentials: "include" });
     if (!response.ok) throw new Error(message("imageDownloadFailedStatus", String(response.status)));
+    const declaredBytes = Number(response.headers.get("content-length"));
+    if (Number.isFinite(declaredBytes) && declaredBytes > MAX_IMAGE_BYTES) {
+      throw new Error(message("imageTooLarge"));
+    }
+    if (Number.isFinite(declaredBytes) && totalBytes + declaredBytes > MAX_TOTAL_IMAGE_BYTES) {
+      throw new Error(message("archiveTooLarge"));
+    }
     const blob = await response.blob();
+    if (!/^image\/(?:jpeg|png|gif|webp)$/i.test(blob.type)) {
+      throw new Error(message("unsupportedImageType"));
+    }
+    if (blob.size > MAX_IMAGE_BYTES) throw new Error(message("imageTooLarge"));
+    totalBytes += blob.size;
+    if (totalBytes > MAX_TOTAL_IMAGE_BYTES) throw new Error(message("archiveTooLarge"));
     images.push({ blob, mimeType: blob.type || "application/octet-stream" });
   }
   return images;
@@ -232,8 +354,9 @@ async function getArtworkImageUrls(workId) {
 
   const urls = data.body
     .map((page) => page?.urls?.original)
-    .filter((url) => typeof url === "string" && url.startsWith("https://i.pximg.net/"));
+    .filter(isPixivImageUrl);
 
   if (urls.length === 0) throw new Error(message("artworkImagesFailed"));
+  if (urls.length > MAX_IMAGE_COUNT) throw new Error(message("tooManyImages"));
   return urls;
 }

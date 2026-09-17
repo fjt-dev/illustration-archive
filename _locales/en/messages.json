@@ -172,5 +172,12 @@
   "recording": { "message": "Recording…" },
   "recordedButton": { "message": "✓ Recorded" },
   "retry": { "message": "Retry" },
-  "artworkRecorded": { "message": "Artwork recorded." }
+  "artworkRecorded": { "message": "Artwork recorded." },
+  "confirmRecordArtwork": { "message": "Record this artwork in Illustration Archive?" },
+  "invalidMessageSender": { "message": "The recording request was rejected." },
+  "archiveAlreadyInProgress": { "message": "This artwork is already being recorded." },
+  "tooManyImages": { "message": "This artwork contains too many images to record safely." },
+  "imageTooLarge": { "message": "An image is too large to record safely." },
+  "archiveTooLarge": { "message": "The total image size is too large to record safely." },
+  "unsupportedImageType": { "message": "The downloaded file is not a supported image type." }
 }

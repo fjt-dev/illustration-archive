@@ -172,5 +172,12 @@
   "recording": { "message": "記録中…" },
   "recordedButton": { "message": "✓ 記録済み" },
   "retry": { "message": "再試行" },
-  "artworkRecorded": { "message": "作品を記録しました" }
+  "artworkRecorded": { "message": "作品を記録しました" },
+  "confirmRecordArtwork": { "message": "この作品をIllustration Archiveに記録しますか？" },
+  "invalidMessageSender": { "message": "不正な記録リクエストを拒否しました" },
+  "archiveAlreadyInProgress": { "message": "この作品はすでに記録中です" },
+  "tooManyImages": { "message": "画像数が多すぎるため、安全に記録できません" },
+  "imageTooLarge": { "message": "画像サイズが大きすぎるため、安全に記録できません" },
+  "archiveTooLarge": { "message": "画像の合計サイズが大きすぎるため、安全に記録できません" },
+  "unsupportedImageType": { "message": "対応していない画像形式です" }
 }
