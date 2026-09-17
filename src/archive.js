@@ -227,6 +227,7 @@ searchInput.addEventListener("keydown", (event) => {
     return;
   }
   if (event.key === "Escape") {
+    event.preventDefault();
     event.stopPropagation();
     hideSearchSuggestions();
     searchInput.blur();

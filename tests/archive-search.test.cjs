@@ -16,6 +16,10 @@ const rememberSearchSource = source.slice(
   source.indexOf('function rememberSearch(value)'),
   source.indexOf('function render(items,')
 );
+const searchKeydownSource = source.slice(
+  source.indexOf('searchInput.addEventListener("keydown"'),
+  source.indexOf('tagSearchInput.addEventListener("input"')
+);
 
 function candidatesFor(works, query) {
   const context = { works, uiLocale: 'en' };
@@ -23,6 +27,37 @@ function candidatesFor(works, query) {
   vm.runInContext(searchCandidatesSource, context);
   return context.searchCandidates(query);
 }
+
+test('Escape dismisses suggestions without clearing the active search', () => {
+  let keydown;
+  let prevented = false;
+  let stopped = false;
+  let hidden = false;
+  let blurred = false;
+  const context = {
+    activeSearchSuggestion: -1,
+    hideSearchSuggestions() { hidden = true; },
+    searchInput: {
+      addEventListener(_type, listener) { keydown = listener; },
+      blur() { blurred = true; }
+    },
+    searchSuggestionList: { querySelectorAll() { return []; } }
+  };
+  vm.createContext(context);
+  vm.runInContext(searchKeydownSource, context);
+
+  keydown({
+    key: 'Escape',
+    isComposing: false,
+    preventDefault() { prevented = true; },
+    stopPropagation() { stopped = true; }
+  });
+
+  assert.equal(prevented, true);
+  assert.equal(stopped, true);
+  assert.equal(hidden, true);
+  assert.equal(blurred, true);
+});
 
 test('search suggestions prioritize prefix matches and then artwork frequency', () => {
   const results = candidatesFor([
