@@ -55,7 +55,10 @@ Firefox is not currently supported.
 - You can also **double-click** a thumbnail to open the viewer.
 - The **⋯** menu on each card lets you view metadata, open the source page, search with Google, or delete the artwork from the archive.
 - Use the sort menu next to the search box to sort by archive date, post date, title, artist name, or size.
-- The tag filters scroll horizontally, while the Favorites filter stays pinned to the left. Tags are ranked by how useful they are for narrowing the archive, and tags shared by at least 80% of 30 or more artworks are hidden. If you select multiple tags, use **Reset tags** to clear them all at once.
+- Typing in the search box shows up to four suggestions from titles, artists, and tags. Focusing the empty search box shows the four most recent searches confirmed with Enter or selected from suggestions; remove an entry with its × button.
+- Search normalizes full-width and half-width characters, letter case, hiragana and katakana, and a leading `#` on tags. Space-separated terms match artworks containing every term.
+- The tag filters scroll horizontally, while the Favorites filter stays pinned to the left. Tags are ranked by how useful they are for narrowing the archive, and tags shared by at least 80% of 30 or more artworks are hidden.
+- Open **All tags** to browse every tag with its artwork count, search the list, and select multiple tags. Multi-tag filters show artworks containing every selected tag; use **Reset tags** to clear them all at once.
 
 ### Hide-titles mode
 
@@ -73,6 +76,7 @@ Firefox is not currently supported.
 - Select the heart above the bottom-right navigation arrows to add or remove the artwork from Favorites. The state stays in sync with the archive cards, with animated feedback that respects reduced-motion preferences.
 - Select **Close** at the top right or press Esc to return to the archive.
 - Use `←` / `→` to move between pages. At the first or last page of an artwork, navigation continues automatically to the previous or next artwork in the archive. The same behavior applies to single-page artworks.
+- In the full-screen viewer, scroll down for the next image or up for the previous image. Navigation continues across artwork boundaries.
 
 ### Recording images
 

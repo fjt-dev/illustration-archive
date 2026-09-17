@@ -9,11 +9,15 @@
       <span id="folder-name" data-i18n="archiveFolderNotSelected">Archive folder: Not selected</span>
       <button id="restore-folder-access" class="folder-access" hidden data-i18n="restoreAccess">Restore access</button>
       <label class="archive-include-images"><span data-i18n="includeImages">Include images</span><input id="archive-include-images" type="checkbox" role="switch"></label>
-      <label class="search-box">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg>
-        <input id="search" type="search" placeholder="Search by title, artist, or tag" data-i18n-attrs="placeholder:searchPlaceholder">
+      <div class="search-box">
+        <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg>
+        <input id="search" type="search" role="combobox" autocomplete="off" aria-autocomplete="list" aria-controls="search-suggestion-list" aria-expanded="false" placeholder="Search by title, artist, or tag" data-i18n-attrs="placeholder:searchPlaceholder,aria-label:searchPlaceholder">
         <kbd>/</kbd>
-      </label>
+        <div id="search-suggestions" class="search-suggestions" hidden>
+          <p id="search-suggestions-heading"></p>
+          <div id="search-suggestion-list" role="listbox" aria-labelledby="search-suggestions-heading"></div>
+        </div>
+      </div>
       <details id="sort-menu" class="sort-menu">
         <summary id="sort-toggle" aria-haspopup="menu" aria-label="Sort" data-i18n-attrs="aria-label:sort">
           <span id="sort-toggle-label" data-i18n="sortArchivedNewest">Recently archived</span>
@@ -99,6 +103,27 @@
       <div><dt><kbd>Enter</kbd></dt><dd data-i18n="shortcutOpen">Open the focused image</dd></div>
     </dl>
     <button id="close-shortcuts" data-i18n="close">Close</button>
+  </dialog>
+  <dialog id="tag-dialog" class="tag-dialog" aria-labelledby="tag-dialog-title">
+    <div class="tag-dialog-heading">
+      <div>
+        <h2 id="tag-dialog-title" data-i18n="allTags">All tags</h2>
+        <p id="tag-dialog-summary"></p>
+      </div>
+      <button id="close-tag-dialog" class="dialog-close" type="button" aria-label="Close" data-i18n-attrs="aria-label:close">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"></path></svg>
+      </button>
+    </div>
+    <label class="tag-search">
+      <span class="visually-hidden" data-i18n="searchTags">Search tags</span>
+      <input id="tag-search" type="search" placeholder="Search tags" data-i18n-attrs="placeholder:searchTags">
+    </label>
+    <div id="tag-list" class="tag-list" role="group" aria-label="Filter by tag" data-i18n-attrs="aria-label:filterByTag"></div>
+    <p id="no-matching-tags" class="tag-list-empty" data-i18n="noMatchingTags" hidden>No matching tags.</p>
+    <div class="tag-dialog-actions">
+      <button id="clear-tag-selection" type="button" data-i18n="resetTags">Reset tags</button>
+      <button id="finish-tag-selection" class="primary" type="button" data-i18n="done">Done</button>
+    </div>
   </dialog>
   <dialog id="usage-consent" class="usage-consent-dialog">
     <div class="onboarding-badge" data-i18n="firstTimeOnly">First time only</div>
