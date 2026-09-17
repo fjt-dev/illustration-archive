@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Illustration Archive",
-  "version": "3.4.0",
+  "version": "3.4.1",
   "default_locale": "en",
   "description": "__MSG_extensionDescription__",
   "icons": {
@@ -17,15 +17,6 @@
   ],
   "host_permissions": ["https://www.pixiv.net/*", "https://i.pximg.net/*"],
   "background": { "service_worker": "src/background.js", "type": "module" },
-  "declarative_net_request": {
-    "rule_resources": [
-      {
-        "id": "pixiv_image_headers",
-        "enabled": true,
-        "path": "rules.json"
-      }
-    ]
-  },
   "content_scripts": [
     {
       "matches": ["https://www.pixiv.net/*"],
