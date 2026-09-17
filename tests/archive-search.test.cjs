@@ -37,6 +37,7 @@ test('Escape dismisses suggestions without clearing the active search', () => {
   const context = {
     activeSearchSuggestion: -1,
     hideSearchSuggestions() { hidden = true; },
+    searchSuggestions: { hidden: false },
     searchInput: {
       addEventListener(_type, listener) { keydown = listener; },
       blur() { blurred = true; }
@@ -57,6 +58,34 @@ test('Escape dismisses suggestions without clearing the active search', () => {
   assert.equal(stopped, true);
   assert.equal(hidden, true);
   assert.equal(blurred, true);
+});
+
+test('hidden suggestions ignore stale option nodes during keyboard navigation', () => {
+  let keydown;
+  let prevented = false;
+  let selected = false;
+  const context = {
+    activeSearchSuggestion: -1,
+    searchSuggestions: { hidden: true },
+    searchInput: { addEventListener(_type, listener) { keydown = listener; } },
+    searchSuggestionList: {
+      querySelectorAll() {
+        return [{ dataset: { searchValue: 'stale' } }];
+      }
+    },
+    setActiveSearchSuggestion() { selected = true; }
+  };
+  vm.createContext(context);
+  vm.runInContext(searchKeydownSource, context);
+
+  keydown({
+    key: 'ArrowDown',
+    isComposing: false,
+    preventDefault() { prevented = true; }
+  });
+
+  assert.equal(prevented, false);
+  assert.equal(selected, false);
 });
 
 test('search suggestions prioritize prefix matches and then artwork frequency', () => {

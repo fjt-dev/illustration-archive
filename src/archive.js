@@ -205,7 +205,8 @@ searchInput.addEventListener("blur", (event) => {
 });
 searchInput.addEventListener("keydown", (event) => {
   if (event.isComposing) return;
-  const options = [...searchSuggestionList.querySelectorAll("[role='option']")];
+  const options = searchSuggestions.hidden
+    ? [] : [...searchSuggestionList.querySelectorAll("[role='option']")];
   if (event.key === "ArrowDown" && options.length) {
     event.preventDefault();
     setActiveSearchSuggestion((activeSearchSuggestion + 1) % options.length);
@@ -542,6 +543,7 @@ function setActiveSearchSuggestion(index) {
 
 function hideSearchSuggestions() {
   searchSuggestions.hidden = true;
+  searchSuggestionList.replaceChildren();
   searchInput.setAttribute("aria-expanded", "false");
   searchInput.removeAttribute("aria-activedescendant");
   activeSearchSuggestion = -1;
