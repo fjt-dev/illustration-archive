@@ -8,6 +8,18 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
   let renderToken = 0;
   let previousFocus = null;
   let activeNavigation = null;
+  let wheelDistance = 0;
+  let lastWheelAt = Number.NEGATIVE_INFINITY;
+  let wheelLockedUntil = Number.NEGATIVE_INFINITY;
+  const WHEEL_THRESHOLD = 50;
+  const WHEEL_RESET_MS = 180;
+  const WHEEL_COOLDOWN_MS = 360;
+
+  function resetWheelNavigation() {
+    wheelDistance = 0;
+    lastWheelAt = Number.NEGATIVE_INFINITY;
+    wheelLockedUntil = Number.NEGATIVE_INFINITY;
+  }
 
   function openViewer() {
     const wasHidden = panel.hidden;
@@ -25,6 +37,7 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     panel.hidden = true;
     content.replaceChildren();
     document.documentElement.classList.remove("viewer-open");
+    resetWheelNavigation();
     activeStep = null;
     activeNavigation = null;
     const returnFocus = previousFocus instanceof HTMLElement && previousFocus.isConnected
@@ -53,6 +66,27 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
       activeStep(-1);
     }
   });
+
+  panel.addEventListener("wheel", (event) => {
+    if (panel.hidden || !activeStep || event.ctrlKey) return;
+    if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
+    event.preventDefault();
+
+    const now = Number.isFinite(event.timeStamp) ? event.timeStamp : performance.now();
+    if (now < wheelLockedUntil) return;
+    if (now - lastWheelAt > WHEEL_RESET_MS || Math.sign(wheelDistance) !== Math.sign(event.deltaY)) {
+      wheelDistance = 0;
+    }
+    lastWheelAt = now;
+    const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? (panel.clientHeight || 800) : 1;
+    wheelDistance += event.deltaY * unit;
+    if (Math.abs(wheelDistance) < WHEEL_THRESHOLD) return;
+
+    const direction = wheelDistance > 0 ? 1 : -1;
+    wheelDistance = 0;
+    wheelLockedUntil = now + WHEEL_COOLDOWN_MS;
+    activeStep(direction);
+  }, { passive: false });
 
   async function loadStoredImage(work, index = 0) {
     return await getImage(work.id, index) || readArchiveImage(work, index);

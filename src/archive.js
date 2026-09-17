@@ -24,10 +24,19 @@ localizeDocument();
 const themeButton = document.querySelector("#theme-toggle");
 const themeMenu = document.querySelector("#theme-menu");
 const searchInput = document.querySelector("#search");
+const searchBox = document.querySelector(".search-box");
+const searchSuggestions = document.querySelector("#search-suggestions");
+const searchSuggestionsHeading = document.querySelector("#search-suggestions-heading");
+const searchSuggestionList = document.querySelector("#search-suggestion-list");
 const sortMenu = document.querySelector("#sort-menu");
 const sortToggle = document.querySelector("#sort-toggle");
 const sortToggleLabel = document.querySelector("#sort-toggle-label");
 const tagFilters = document.querySelector("#tag-filters");
+const tagDialog = document.querySelector("#tag-dialog");
+const tagList = document.querySelector("#tag-list");
+const tagSearchInput = document.querySelector("#tag-search");
+const tagDialogSummary = document.querySelector("#tag-dialog-summary");
+const noMatchingTags = document.querySelector("#no-matching-tags");
 const uiLocale = catalogLocale();
 let selectedTheme = await initTheme(themeButton);
 updateThemeOptions();
@@ -88,6 +97,7 @@ const archiveViewer = createArchiveViewer(
 let works = await listWorks();
 let visibleWorks = works;
 let searchQuery = "";
+let tagSearchQuery = "";
 const activeTags = new Set();
 let favoriteOnly = false;
 let sortOrder = "archived-desc";
@@ -96,6 +106,12 @@ const selectedIds = new Set();
 const BATCH_SIZE = 36;
 const COMMON_TAG_MIN_WORKS = 30;
 const COMMON_TAG_COVERAGE_THRESHOLD = 0.8;
+const SEARCH_SUGGESTION_LIMIT = 4;
+const storedSearchHistory = (await chrome.storage.local.get("archiveSearchHistory")).archiveSearchHistory;
+let searchHistory = Array.isArray(storedSearchHistory)
+  ? storedSearchHistory.filter((entry) => typeof entry === "string" && entry.trim()).slice(0, SEARCH_SUGGESTION_LIMIT)
+  : [];
+let activeSearchSuggestion = -1;
 let renderedCount = 0;
 let viewMode = (await chrome.storage.local.get("archiveViewMode")).archiveViewMode === "infinite"
   ? "infinite" : "standard";
@@ -178,8 +194,56 @@ if (!firstRunState.hasUsageConsent) {
 }
 
 searchInput.addEventListener("input", (event) => {
-  searchQuery = event.target.value.trim().toLocaleLowerCase();
+  searchQuery = normalizeSearchText(event.target.value);
   applyFilters();
+  renderSearchSuggestions();
+});
+searchInput.addEventListener("focus", renderSearchSuggestions);
+searchInput.addEventListener("blur", (event) => {
+  if (searchBox.contains(event.relatedTarget)) return;
+  hideSearchSuggestions();
+});
+searchInput.addEventListener("keydown", (event) => {
+  if (event.isComposing) return;
+  const options = searchSuggestions.hidden
+    ? [] : [...searchSuggestionList.querySelectorAll("[role='option']")];
+  if (event.key === "ArrowDown" && options.length) {
+    event.preventDefault();
+    setActiveSearchSuggestion((activeSearchSuggestion + 1) % options.length);
+    return;
+  }
+  if (event.key === "ArrowUp" && options.length) {
+    event.preventDefault();
+    setActiveSearchSuggestion(activeSearchSuggestion <= 0 ? options.length - 1 : activeSearchSuggestion - 1);
+    return;
+  }
+  if (event.key === "Enter") {
+    event.preventDefault();
+    const selected = options[activeSearchSuggestion];
+    if (selected) selectSearchSuggestion(selected.dataset.searchValue);
+    else {
+      rememberSearch(searchInput.value);
+      hideSearchSuggestions();
+    }
+    return;
+  }
+  if (event.key === "Escape") {
+    event.preventDefault();
+    event.stopPropagation();
+    hideSearchSuggestions();
+    searchInput.blur();
+  }
+});
+tagSearchInput.addEventListener("input", (event) => {
+  tagSearchQuery = event.target.value.trim().toLocaleLowerCase();
+  renderTagList();
+});
+document.querySelector("#close-tag-dialog").addEventListener("click", () => tagDialog.close());
+document.querySelector("#finish-tag-selection").addEventListener("click", () => tagDialog.close());
+document.querySelector("#clear-tag-selection").addEventListener("click", () => {
+  activeTags.clear();
+  applyFilters();
+  renderTagList();
 });
 document.querySelector("#close").addEventListener("click", () => archiveViewer.close());
 document.querySelector("#close-metadata").addEventListener("click", () => metadataViewer.close());
@@ -198,11 +262,16 @@ document.querySelector("#usage-consent-agree").addEventListener("click", async (
 });
 
 document.addEventListener("click", (event) => {
+  if (!searchBox.contains(event.target)) hideSearchSuggestions();
   if (themeMenu.open && !themeMenu.contains(event.target)) themeMenu.removeAttribute("open");
   if (sortMenu.open && !sortMenu.contains(event.target)) sortMenu.removeAttribute("open");
   document.querySelectorAll(".card-menu[open]").forEach((menu) => {
     if (!menu.contains(event.target)) menu.removeAttribute("open");
   });
+});
+window.addEventListener("resize", () => {
+  const scrollArea = tagFilters.querySelector(".tag-filters-scroll");
+  if (scrollArea) updateTagScrollFade(scrollArea);
 });
 document.addEventListener("keydown", (event) => {
   const editing = event.target.matches("input, textarea, [contenteditable='true']");
@@ -344,11 +413,10 @@ function openWorkViewer(work, options = {}) {
 function applyFilters() {
   const availableTags = new Set(works.flatMap((work) => (work.tags || []).map(normalizeTag)));
   activeTags.forEach((tag) => { if (!availableTags.has(tag)) activeTags.delete(tag); });
+  const queryTokens = searchTokens(searchQuery);
   visibleWorks = works.filter((work) => {
-    const searchable = [work.title, work.creatorName, ...(work.tags || [])]
-      .join(" ")
-      .toLocaleLowerCase();
-    const matchesSearch = !searchQuery || searchable.includes(searchQuery);
+    const searchable = normalizeSearchText([work.title, work.creatorName, ...(work.tags || [])].join(" "));
+    const matchesSearch = queryTokens.every((token) => searchable.includes(token));
     const workTags = new Set((work.tags || []).map(normalizeTag));
     const matchesTag = activeTags.size === 0 || [...activeTags].every((tag) => workTags.has(tag));
     const matchesFavorite = !favoriteOnly || work.favorite === true;
@@ -357,6 +425,157 @@ function applyFilters() {
   visibleWorks.sort(sortComparators[sortOrder] || sortComparators["archived-desc"]);
   render(visibleWorks, { reset: true });
   archiveViewer.updateNavigation(visibleWorks);
+}
+
+function normalizeSearchText(value) {
+  return String(value || "")
+    .normalize("NFKC")
+    .toLocaleLowerCase()
+    .replace(/[ァ-ヶ]/g, (character) => String.fromCharCode(character.charCodeAt(0) - 0x60))
+    .replace(/[‐‑‒–—―]/g, "-")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function searchTokens(query) {
+  return normalizeSearchText(query)
+    .split(" ")
+    .map((token) => token.replace(/^#+/, ""))
+    .filter(Boolean);
+}
+
+function searchMatchRank(candidate, query) {
+  const tokens = searchTokens(query);
+  const normalizedQuery = tokens.join(" ");
+  if (!tokens.length) return Number.POSITIVE_INFINITY;
+  if (candidate === normalizedQuery) return 0;
+  if (candidate.startsWith(normalizedQuery)) return 1;
+  const words = candidate.split(/[\s/_-]+/);
+  if (tokens.every((token) => words.some((word) => word.startsWith(token)))) return 2;
+  if (tokens.every((token) => candidate.includes(token))) return 3;
+  return Number.POSITIVE_INFINITY;
+}
+
+function searchCandidates(query) {
+  const queryTokens = searchTokens(query);
+  if (!queryTokens.length) return [];
+  const candidates = new Map();
+  works.forEach((work) => {
+    const seen = new Set();
+    [work.title, work.creatorName, ...(work.tags || [])].forEach((rawValue) => {
+      const label = String(rawValue || "").trim();
+      const key = normalizeSearchText(label);
+      const rank = searchMatchRank(key, query);
+      if (!key || !Number.isFinite(rank) || seen.has(key)) return;
+      seen.add(key);
+      const candidate = candidates.get(key) || { key, label, count: 0, rank };
+      candidate.count += 1;
+      candidate.rank = Math.min(candidate.rank, rank);
+      candidates.set(key, candidate);
+    });
+  });
+  return [...candidates.values()].sort((a, b) => a.rank - b.rank
+    || b.count - a.count
+    || a.label.localeCompare(b.label, uiLocale));
+}
+
+function renderSearchSuggestions() {
+  const query = searchInput.value.trim();
+  const showingHistory = !query;
+  const values = query
+    ? searchCandidates(query).slice(0, SEARCH_SUGGESTION_LIMIT).map((candidate) => candidate.label)
+    : searchHistory.slice(0, SEARCH_SUGGESTION_LIMIT);
+  if (!values.length) {
+    hideSearchSuggestions();
+    return;
+  }
+
+  searchSuggestionsHeading.textContent = message(query ? "searchSuggestions" : "recentSearches");
+  const rows = values.map((value, index) => {
+    const row = document.createElement("div");
+    row.className = "search-suggestion-row";
+    row.setAttribute("role", "none");
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.id = `search-suggestion-${index}`;
+    button.className = "search-suggestion";
+    button.setAttribute("role", "option");
+    button.setAttribute("aria-selected", "false");
+    button.dataset.searchValue = value;
+    button.textContent = value;
+    button.addEventListener("click", () => selectSearchSuggestion(value));
+    row.append(button);
+
+    if (showingHistory) {
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "remove-search-history";
+      remove.setAttribute("aria-label", message("deleteSearchHistory", value));
+      remove.title = message("deleteSearchHistory", value);
+      remove.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"></path></svg>';
+      remove.addEventListener("click", (event) => {
+        event.stopPropagation();
+        removeSearchHistory(value);
+      });
+      row.append(remove);
+    }
+    return row;
+  });
+  searchSuggestionList.replaceChildren(...rows);
+  activeSearchSuggestion = -1;
+  searchInput.removeAttribute("aria-activedescendant");
+  searchSuggestions.hidden = false;
+  searchInput.setAttribute("aria-expanded", "true");
+}
+
+function setActiveSearchSuggestion(index) {
+  const options = [...searchSuggestionList.querySelectorAll("[role='option']")];
+  activeSearchSuggestion = index;
+  options.forEach((option, optionIndex) => {
+    option.setAttribute("aria-selected", String(optionIndex === index));
+  });
+  const activeOption = options[index];
+  if (!activeOption) return;
+  searchInput.setAttribute("aria-activedescendant", activeOption.id);
+  activeOption.scrollIntoView({ block: "nearest" });
+}
+
+function hideSearchSuggestions() {
+  searchSuggestions.hidden = true;
+  searchSuggestionList.replaceChildren();
+  searchInput.setAttribute("aria-expanded", "false");
+  searchInput.removeAttribute("aria-activedescendant");
+  activeSearchSuggestion = -1;
+}
+
+function selectSearchSuggestion(value) {
+  searchInput.value = value;
+  searchQuery = normalizeSearchText(value);
+  rememberSearch(value);
+  applyFilters();
+  searchInput.focus();
+  hideSearchSuggestions();
+}
+
+function rememberSearch(value) {
+  const query = String(value || "").trim();
+  if (!query) return;
+  const normalized = normalizeSearchText(query);
+  searchHistory = [query, ...searchHistory.filter((entry) => normalizeSearchText(entry) !== normalized)]
+    .slice(0, SEARCH_SUGGESTION_LIMIT);
+  saveSearchHistory();
+}
+
+function removeSearchHistory(value) {
+  const normalized = normalizeSearchText(value);
+  searchHistory = searchHistory.filter((entry) => normalizeSearchText(entry) !== normalized);
+  saveSearchHistory();
+  searchInput.focus({ preventScroll: true });
+}
+
+function saveSearchHistory() {
+  chrome.storage.local.set({ archiveSearchHistory: searchHistory }).catch(console.error);
 }
 
 function render(items, { reset = false } = {}) {
@@ -439,7 +658,20 @@ function renderTagFilters() {
   const scrollArea = document.createElement("div");
   scrollArea.className = "tag-filters-scroll";
   scrollArea.append(...buttons);
+  scrollArea.addEventListener("scroll", () => updateTagScrollFade(scrollArea), { passive: true });
   const children = [favorite, scrollArea];
+  const showAll = document.createElement("button");
+  showAll.type = "button";
+  showAll.className = "tag-reset show-all-tags";
+  showAll.textContent = message("allTagsCount", String(allTags.length));
+  showAll.addEventListener("click", () => {
+    tagSearchQuery = "";
+    tagSearchInput.value = "";
+    renderTagList();
+    tagDialog.showModal();
+    tagSearchInput.focus();
+  });
+  children.push(showAll);
   if (activeTags.size > 0) {
     const reset = document.createElement("button");
     reset.type = "button";
@@ -452,6 +684,46 @@ function renderTagFilters() {
     children.push(reset);
   }
   tagFilters.replaceChildren(...children);
+  updateTagScrollFade(scrollArea);
+}
+
+function updateTagScrollFade(scrollArea) {
+  const maxScroll = Math.max(0, scrollArea.scrollWidth - scrollArea.clientWidth);
+  scrollArea.classList.toggle("fade-left", scrollArea.scrollLeft > 1);
+  scrollArea.classList.toggle("fade-right", scrollArea.scrollLeft < maxScroll - 1);
+}
+
+function renderTagList() {
+  const allTags = popularTags();
+  const tags = allTags
+    .filter((tag) => !tagSearchQuery || tag.label.toLocaleLowerCase().includes(tagSearchQuery))
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, uiLocale));
+  const buttons = tags.map((tag) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "tag-list-item";
+    button.setAttribute("aria-pressed", String(activeTags.has(tag.key)));
+
+    const label = document.createElement("span");
+    label.textContent = `#${tag.label}`;
+    const count = document.createElement("span");
+    count.className = "tag-list-count";
+    count.textContent = String(tag.count);
+    button.append(label, count);
+
+    button.addEventListener("click", () => {
+      activeTags.has(tag.key) ? activeTags.delete(tag.key) : activeTags.add(tag.key);
+      applyFilters();
+      renderTagList();
+      tagList.querySelector(`[data-tag-key="${CSS.escape(tag.key)}"]`)?.focus();
+    });
+    button.dataset.tagKey = tag.key;
+    return button;
+  });
+  tagList.replaceChildren(...buttons);
+  noMatchingTags.hidden = tags.length > 0;
+  tagDialogSummary.textContent = message("tagListSummary", [String(allTags.length), String(activeTags.size)]);
+  document.querySelector("#clear-tag-selection").disabled = activeTags.size === 0;
 }
 
 function popularTags() {
