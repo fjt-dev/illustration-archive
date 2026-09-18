@@ -16,7 +16,7 @@ test('privileged page button only accepts a trusted click and confirms the opera
 
 test('image Referer rule is dynamic and restricted to this extension', () => {
   const manifest = JSON.parse(readFileSync(path.join(root, 'manifest.json'), 'utf8'));
-  assert.equal(manifest.version, '3.4.1');
+  assert.equal(manifest.version, '3.4.2');
   assert.equal(manifest.declarative_net_request, undefined);
   assert.equal(existsSync(path.join(root, 'rules.json')), false);
   assert.match(backgroundSource, /initiatorDomains: \[chrome\.runtime\.id\]/);
