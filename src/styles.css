@@ -458,10 +458,22 @@ dialog::backdrop { background: var(--overlay); backdrop-filter: blur(4px); }
 .archive-page .card-menu summary:hover, .archive-page .card-menu[open] summary { border: 0; background: rgb(17 19 24 / 82%); }
 .archive-page .card-menu-items { top: 40px; border: 0; border-radius: 18px; box-shadow: none; }
 .archive-page .selection-actions { position: fixed; z-index: 8; bottom: 24px; left: 50%; min-height: 0; transform: translateX(-50%); }
-.archive-page .selection-actions-controls { padding: 6px; border: 0; border-radius: 28px; color: #fff; background: #000; box-shadow: none; }
+.archive-page .selection-actions-controls {
+  padding: 6px;
+  border: 1px solid #73737b;
+  border-radius: 28px;
+  color: #fff;
+  background: #343438;
+  box-shadow: 0 14px 36px rgb(0 0 0 / 60%), 0 2px 8px rgb(0 0 0 / 45%);
+}
 .archive-page .selection-actions button { border-radius: 22px; color: #fff; background: transparent; }
 .archive-page .selection-actions button:hover { background: rgb(255 255 255 / 14%); }
+.archive-page .selection-actions button:focus-visible { outline: 2px solid #69bdff; outline-offset: 1px; }
 .archive-page .selection-actions .danger { color: #ff9aa4; }
+:root[data-theme="light"] .archive-page .selection-actions-controls { border-color: transparent; background: #000; box-shadow: 0 14px 36px rgb(31 41 55 / 24%); }
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) .archive-page .selection-actions-controls { border-color: transparent; background: #000; box-shadow: 0 14px 36px rgb(31 41 55 / 24%); }
+}
 .archive-page .page-links { background: inherit; transition: right 180ms ease; }
 
 #viewer {
