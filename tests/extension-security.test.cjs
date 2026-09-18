@@ -11,7 +11,25 @@ const contentSource = readFileSync(path.join(root, 'src/content.js'), 'utf8');
 test('privileged page button only accepts a trusted click and confirms the operation', () => {
   assert.match(contentSource, /if \(!event\?\.isTrusted\) return;/);
   assert.match(contentSource, /confirm\(message\("confirmRecordArtwork"\)\)/);
-  assert.match(contentSource, /CONTENT_SCRIPT_VERSION = 8/);
+  assert.match(contentSource, /CONTENT_SCRIPT_VERSION = 9/);
+});
+
+test('invalidated extension contexts fall back without throwing', () => {
+  const helpers = contentSource.slice(
+    contentSource.indexOf('const extensionApi = globalThis.chrome;'),
+    contentSource.indexOf('try { globalThis[INSTANCE_KEY]')
+  );
+  const context = {
+    chrome: {
+      runtime: { get id() { throw new Error('Extension context invalidated'); } },
+      i18n: { getMessage() { throw new Error('Extension context invalidated'); } }
+    }
+  };
+  vm.createContext(context);
+  vm.runInContext(helpers, context);
+
+  assert.equal(context.extensionContextAvailable(), false);
+  assert.equal(context.message('recordButton'), 'recordButton');
 });
 
 test('image Referer rule is dynamic and restricted to this extension', () => {
