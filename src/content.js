@@ -1,8 +1,20 @@
 (() => {
 const INSTANCE_KEY = "__ILLUSTRATION_ARCHIVE_INSTANCE__";
-const CONTENT_SCRIPT_VERSION = 8;
-const message = (key, substitutions) => chrome.i18n.getMessage(key, substitutions) || key;
+const CONTENT_SCRIPT_VERSION = 9;
+const extensionApi = globalThis.chrome;
+
+function extensionContextAvailable() {
+  try { return Boolean(extensionApi?.runtime?.id); }
+  catch { return false; }
+}
+
+function message(key, substitutions) {
+  try { return extensionApi?.i18n?.getMessage(key, substitutions) || key; }
+  catch { return key; }
+}
+
 try { globalThis[INSTANCE_KEY]?.dispose?.(); } catch {}
+if (!extensionContextAvailable()) return;
 
 function parsePreload() {
   const node = document.querySelector("#meta-preload-data");
@@ -64,7 +76,8 @@ function handleRuntimeMessage(message, _sender, sendResponse) {
   return false;
 }
 
-chrome.runtime.onMessage.addListener(handleRuntimeMessage);
+try { extensionApi.runtime.onMessage.addListener(handleRuntimeMessage); }
+catch { return; }
 
 let disposed = false;
 const instance = { dispose };
@@ -72,7 +85,13 @@ globalThis[INSTANCE_KEY] = instance;
 
 const recordButton = createRecordButton();
 let currentArtworkPath = location.pathname;
-const navigationHandler = () => queueMicrotask(updateRecordButton);
+const navigationHandler = () => {
+  if (!extensionContextAvailable()) return dispose();
+  queueMicrotask(() => {
+    if (!extensionContextAvailable()) return dispose();
+    updateRecordButton();
+  });
+};
 globalThis.navigation?.addEventListener("currententrychange", navigationHandler);
 globalThis.addEventListener("popstate", navigationHandler);
 updateRecordButton();
@@ -108,11 +127,12 @@ async function recordCurrentWork(event) {
   // The host page shares this DOM and can dispatch synthetic events into it.
   // Only a real user interaction may cross into the privileged extension flow.
   if (!event?.isTrusted) return;
+  if (!extensionContextAvailable()) return dispose();
   if (!confirm(message("confirmRecordArtwork"))) return;
   recordButton.disabled = true;
   recordButton.textContent = message("recording");
   try {
-    const result = await chrome.runtime.sendMessage({ type: "ARCHIVE_WORK", work: currentWork() });
+    const result = await extensionApi.runtime.sendMessage({ type: "ARCHIVE_WORK", work: currentWork() });
     if (!result?.ok) throw new Error(result?.error || message("recordFailed"));
     recordButton.textContent = message("recordedButton");
     showSavedNotice();
@@ -134,7 +154,7 @@ function dispose() {
   globalThis.navigation?.removeEventListener("currententrychange", navigationHandler);
   globalThis.removeEventListener("popstate", navigationHandler);
   recordButton.remove();
-  try { chrome.runtime.onMessage.removeListener(handleRuntimeMessage); } catch {}
+  try { extensionApi?.runtime?.onMessage.removeListener(handleRuntimeMessage); } catch {}
   if (globalThis[INSTANCE_KEY] === instance) delete globalThis[INSTANCE_KEY];
 }
 
