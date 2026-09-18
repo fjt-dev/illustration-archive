@@ -3,7 +3,7 @@ import { getArchiveFolder, saveArchiveToFolder } from "./folder.js";
 import { hasUsageConsent, shouldIncludeImages } from "./settings.js";
 import { message } from "./i18n.js";
 
-const CONTENT_SCRIPT_VERSION = 8;
+const CONTENT_SCRIPT_VERSION = 9;
 const IMAGE_HEADER_RULE_ID = 1;
 const MAX_IMAGE_COUNT = 200;
 const MAX_IMAGE_BYTES = 32 * 1024 * 1024;
