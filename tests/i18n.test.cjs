@@ -27,6 +27,14 @@ test('Japanese README links to the Japanese privacy policy', () => {
   assert.match(readme, /\[プライバシーポリシー\]\(PRIVACY\.ja\.md\)/);
 });
 
+test('viewer guides do not advertise removed wheel navigation', () => {
+  const englishReadme = readFileSync(join(root, 'README.md'), 'utf8');
+  const japaneseReadme = readFileSync(join(root, 'README.ja.md'), 'utf8');
+
+  assert.doesNotMatch(englishReadme, /scroll down for the next image/i);
+  assert.doesNotMatch(japaneseReadme, /全画面ビューワー上で下方向へスクロール/);
+});
+
 test('all message keys used by extension source exist in both catalogs', () => {
   const files = [
     'src/archive.js', 'src/archive-viewer.js', 'src/background.js', 'src/content.js',

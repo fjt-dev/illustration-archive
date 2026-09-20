@@ -129,12 +129,7 @@ function setupViewer(getReturnFocus) {
     viewer, content, panel, close, returnControl, element,
     document: context.document,
     flushFrames: () => { while (frames.length) frames.shift()(); },
-    step: key => keys.keydown({ key, preventDefault() {} }),
-    wheel: ({ deltaY, deltaX = 0, timeStamp = 0, deltaMode = 0, ctrlKey = false }) => {
-      let prevented = false;
-      panel.listeners.wheel({ deltaY, deltaX, timeStamp, deltaMode, ctrlKey, preventDefault() { prevented = true; } });
-      return prevented;
-    }
+    step: key => keys.keydown({ key, preventDefault() {} })
   };
 }
 
@@ -152,34 +147,9 @@ test('viewer favorites follow artwork navigation and remain available when image
   assert.equal(content.children.length, 0);
 });
 
-test('viewer wheel navigation accumulates movement and prevents rapid repeated steps', async () => {
-  const { viewer, content, wheel } = setupViewer();
-  const works = ['a', 'b', 'c'].map(id => ({ id, imageCount: 0 }));
-  await viewer.showImages(works[0], { works, index: 0 });
-
-  assert.equal(wheel({ deltaY: 20, timeStamp: 10 }), true);
-  assert.equal(content.children[1].workId, 'a');
-  wheel({ deltaY: 20, timeStamp: 30 });
-  assert.equal(content.children[1].workId, 'a');
-  wheel({ deltaY: 20, timeStamp: 50 });
-  assert.equal(content.children[1].workId, 'b');
-
-  wheel({ deltaY: 100, timeStamp: 80 });
-  assert.equal(content.children[1].workId, 'b');
-  wheel({ deltaY: 100, timeStamp: 500 });
-  assert.equal(content.children[1].workId, 'c');
-  wheel({ deltaY: -100, timeStamp: 900 });
-  assert.equal(content.children[1].workId, 'b');
-});
-
-test('viewer ignores horizontal scrolling and browser zoom gestures', async () => {
-  const { viewer, content, wheel } = setupViewer();
-  const works = ['a', 'b'].map(id => ({ id, imageCount: 0 }));
-  await viewer.showImages(works[0], { works, index: 0 });
-
-  assert.equal(wheel({ deltaX: 100, deltaY: 10, timeStamp: 10 }), false);
-  assert.equal(wheel({ deltaY: 100, timeStamp: 20, ctrlKey: true }), false);
-  assert.equal(content.children[1].workId, 'a');
+test('viewer does not register wheel navigation', () => {
+  const { panel } = setupViewer();
+  assert.equal(panel.listeners.wheel, undefined);
 });
 
 for (const removedIndex of [0, 1, 2]) {
