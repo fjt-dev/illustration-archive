@@ -76,7 +76,6 @@ Firefox is not currently supported.
 - Select the heart above the bottom-right navigation arrows to add or remove the artwork from Favorites. The state stays in sync with the archive cards, with animated feedback that respects reduced-motion preferences.
 - Select **Close** at the top right or press Esc to return to the archive.
 - Use `←` / `→` to move between pages. At the first or last page of an artwork, navigation continues automatically to the previous or next artwork in the archive. The same behavior applies to single-page artworks.
-- In the full-screen viewer, scroll down for the next image or up for the previous image. Navigation continues across artwork boundaries.
 
 ### Recording images
 

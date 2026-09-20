@@ -28,3 +28,11 @@ test('full-screen viewer turns the artwork into a soft color backdrop', () => {
   assert.match(backdropRule, /filter:\s*blur\(72px\) saturate\(1\.2\)/);
   assert.match(artworkRule, /object-fit:\s*scale-down/);
 });
+
+test('viewer pagination keeps stable contrast over artwork backdrops', () => {
+  const rule = styles.match(/\.viewer-pagination \{([\s\S]*?)\}/)?.[1] || '';
+
+  assert.match(rule, /color:\s*#fff/);
+  assert.match(rule, /background:\s*rgb\(17 19 24 \/ 82%\)/);
+  assert.match(rule, /border-radius:\s*999px/);
+});
