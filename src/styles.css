@@ -588,8 +588,34 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
   justify-content: center;
   color: var(--viewer-control);
   background: transparent;
+  isolation: isolate;
 }
-#viewer-content .viewer-stage > img {
+#viewer-content .viewer-stage::after {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: rgb(0 0 0 / 24%);
+  content: "";
+  pointer-events: none;
+}
+#viewer-content .viewer-stage > .viewer-backdrop {
+  position: absolute;
+  z-index: -2;
+  inset: -12%;
+  display: block;
+  width: 124% !important;
+  height: 124% !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: cover !important;
+  filter: blur(72px) saturate(1.2);
+  opacity: .82;
+  transform: scale(1.08);
+  pointer-events: none;
+}
+#viewer-content .viewer-stage > .viewer-artwork {
+  position: relative;
+  z-index: 1;
   display: block;
   box-sizing: border-box;
   width: auto !important;

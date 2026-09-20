@@ -19,3 +19,12 @@ test('light selection actions keep the high-contrast black surface', () => {
     /:root\[data-theme="light"\] \.archive-page \.selection-actions-controls \{[^}]*background:\s*#000/
   );
 });
+
+test('full-screen viewer turns the artwork into a soft color backdrop', () => {
+  const backdropRule = styles.match(/#viewer-content \.viewer-stage > \.viewer-backdrop \{([\s\S]*?)\}/)?.[1] || '';
+  const artworkRule = styles.match(/#viewer-content \.viewer-stage > \.viewer-artwork \{([\s\S]*?)\}/)?.[1] || '';
+
+  assert.match(backdropRule, /object-fit:\s*cover/);
+  assert.match(backdropRule, /filter:\s*blur\(72px\) saturate\(1\.2\)/);
+  assert.match(artworkRule, /object-fit:\s*scale-down/);
+});

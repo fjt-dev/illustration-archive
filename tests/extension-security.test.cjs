@@ -34,7 +34,7 @@ test('invalidated extension contexts fall back without throwing', () => {
 
 test('image Referer rule is dynamic and restricted to this extension', () => {
   const manifest = JSON.parse(readFileSync(path.join(root, 'manifest.json'), 'utf8'));
-  assert.equal(manifest.version, '3.4.2');
+  assert.equal(manifest.version, '3.5.0');
   assert.equal(manifest.declarative_net_request, undefined);
   assert.equal(existsSync(path.join(root, 'rules.json')), false);
   assert.match(backgroundSource, /initiatorDomains: \[chrome\.runtime\.id\]/);
