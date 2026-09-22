@@ -725,7 +725,7 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
   #close { top: 14px; right: 14px; width: 48px; height: 48px; font-size: 30px; }
 }
 
-/* Compact square tiles for progressive archive browsing. */
+/* Image-sized tiles for progressive archive browsing. */
 .display-controls { display: flex; flex: 0 0 auto; align-items: center; justify-content: flex-end; gap: 8px; }
 .view-mode { position: relative; display: flex; gap: 2px; padding: 3px; border-radius: 20px; background: var(--surface); isolation: isolate; }
 .view-mode::before { position: absolute; z-index: 0; top: 3px; left: 3px; width: 36px; height: 36px; border-radius: 50%; background: var(--text); content: ""; pointer-events: none; transform: translateX(0); transition: transform 320ms cubic-bezier(.22, 1, .36, 1); }
@@ -736,16 +736,16 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
 .view-mode button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
 .view-mode button[aria-pressed="true"] { color: var(--bg); background: transparent; }
 .view-mode button[aria-pressed="true"] svg { transform: scale(1.06); }
-.archive-page .infinite-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 6px; }
-.archive-page .infinite-grid .thumb { border-radius: 6px; }
+.archive-page .infinite-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); grid-auto-rows: 2px; grid-auto-flow: row dense; gap: 10px; }
+.archive-page .infinite-grid .thumb { border-radius: 14px; }
 .archive-page .infinite-grid .card-info { display: none; }
 .archive-page .infinite-grid .favorite-button { display: none; }
-.archive-page .infinite-grid article { min-width: 0; aspect-ratio: 1; }
+.archive-page .infinite-grid article { min-width: 0; align-self: start; grid-row-end: span 17; }
 .archive-page .infinite-grid article.selected .thumb { outline-offset: -3px; }
 .scroll-footer { max-width: 1280px; margin: 28px auto; text-align: center; color: var(--muted); font-size: 13px; }
 .scroll-footer button { margin-top: 4px; }
 @media (max-width: 650px) {
-  .archive-page .infinite-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+  .archive-page .infinite-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
   .view-mode button { flex: 1; }
 }
 

@@ -58,7 +58,7 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     return await getImage(work.id, index) || readArchiveImage(work, index);
   }
 
-  async function loadThumbnail(node, work) {
+  async function loadThumbnail(node, work, onLoad) {
     if (work.imageCount === 0) {
       node.textContent = message("noImage");
       return;
@@ -73,10 +73,13 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     const url = URL.createObjectURL(image.blob);
     const thumbnail = new Image();
     thumbnail.alt = "";
-    thumbnail.src = url;
-    thumbnail.onload = () => URL.revokeObjectURL(url);
+    thumbnail.onload = () => {
+      if (node.isConnected) onLoad?.(thumbnail);
+      URL.revokeObjectURL(url);
+    };
     thumbnail.onerror = () => URL.revokeObjectURL(url);
     node.replaceChildren(thumbnail);
+    thumbnail.src = url;
   }
 
   async function showImages(work, { works = null, index = -1, startAtEnd = false } = {}) {

@@ -125,9 +125,40 @@ const thumbnailObserver = new IntersectionObserver((entries) => {
   for (const entry of entries) {
     if (!entry.isIntersecting) continue;
     thumbnailObserver.unobserve(entry.target);
-    archiveViewer.loadThumbnail(entry.target.querySelector(".thumb-content"), entry.target.work);
+    archiveViewer.loadThumbnail(entry.target.querySelector(".thumb-content"), entry.target.work, onThumbnailLoaded);
   }
 }, { rootMargin: "600px 0px" });
+let masonryLayoutFrame = 0;
+function updateMasonryTile(article) {
+  if (viewMode !== "infinite" || !article.isConnected) return;
+  const width = article.getBoundingClientRect().width;
+  const ratio = Number(article.dataset.tileRatio) || 1;
+  const styles = getComputedStyle(grid);
+  const row = parseFloat(styles.gridAutoRows);
+  const gap = parseFloat(styles.rowGap);
+  if (!width || !row || !Number.isFinite(gap)) return;
+  article.style.gridRowEnd = `span ${Math.ceil((width / ratio + gap) / (row + gap))}`;
+}
+
+function scheduleMasonryLayout() {
+  if (viewMode !== "infinite" || masonryLayoutFrame) return;
+  masonryLayoutFrame = requestAnimationFrame(() => {
+    masonryLayoutFrame = 0;
+    grid.querySelectorAll("article").forEach(updateMasonryTile);
+  });
+}
+
+function onThumbnailLoaded(thumbnail) {
+  if (viewMode !== "infinite") return;
+  const article = thumbnail.closest("article");
+  if (!article || !thumbnail.naturalWidth || !thumbnail.naturalHeight) return;
+  const ratio = thumbnail.naturalWidth / thumbnail.naturalHeight;
+  article.dataset.tileRatio = String(ratio);
+  article.querySelector(".thumb").style.aspectRatio = String(ratio);
+  updateMasonryTile(article);
+}
+
+window.addEventListener("resize", scheduleMasonryLayout);
 loadMoreButton.addEventListener("click", appendNextBatch);
 document.querySelectorAll("[data-view-mode]").forEach((button) => {
   button.addEventListener("click", () => {
@@ -593,6 +624,7 @@ function render(items, { reset = false } = {}) {
     ? Math.min(items.length, reset ? BATCH_SIZE : Math.max(BATCH_SIZE, renderedCount))
     : items.length;
   grid.replaceChildren(...items.slice(0, renderedCount).map(card));
+  scheduleMasonryLayout();
   updateScrollFooter();
   if (!items.length) grid.textContent = works.length ? message("noMatchingArtworks") : message("noArchivedArtworks");
   updateSelectionControls();
@@ -613,6 +645,7 @@ function appendNextBatch() {
   scrollObserver.disconnect();
   const nextCount = Math.min(renderedCount + BATCH_SIZE, visibleWorks.length);
   grid.append(...visibleWorks.slice(renderedCount, nextCount).map(card));
+  scheduleMasonryLayout();
   renderedCount = nextCount;
   updateScrollFooter();
 }
