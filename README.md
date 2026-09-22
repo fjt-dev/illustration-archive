@@ -62,7 +62,7 @@ Firefox is not currently supported.
 
 ### Hide-titles mode
 
-- Select the four-square icon (**Hide titles**) at the top of the archive to switch to an image-focused square tile layout. Select the card icon with lines below the image (**Standard view**) to switch back. Hover over either icon to see its name.
+- Select the four-square icon (**Hide titles**) at the top of the archive to switch to an image-focused layout with tiles sized to each image's aspect ratio. Select the card icon with lines below the image (**Standard view**) to switch back. Hover over either icon to see its name.
 - Scrolling automatically loads 36 more artworks at a time. You can also select **Load more**.
 - Search, tags, favorites, and sorting remain active. Loading stops after all matching archived artworks are displayed, without repeating any artwork.
 - Select a tile to open the viewer at the image's original aspect ratio. The heart button is hidden in tile view, so change favorites in standard view or in the image viewer. Selection and artwork menus are available in both modes.

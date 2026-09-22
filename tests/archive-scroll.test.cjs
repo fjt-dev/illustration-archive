@@ -18,7 +18,7 @@ function renderAtOffset(mode, reset) {
     window: { scrollTo(options) { assert.equal(options.behavior, 'instant'); context.scrollY = options.top; events.push('scroll'); } },
     scrollY: 4000,
     grid: { classList: { toggle() {} }, replaceChildren(...cards) { context.cards = cards; events.push('replace'); } },
-    card: item => item,
+    card: item => item, scheduleMasonryLayout() {},
     updateScrollFooter() { events.push('observe'); }, updateSelectionControls() {}
   };
   vm.createContext(context);
