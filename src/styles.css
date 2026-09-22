@@ -340,7 +340,7 @@ dialog::backdrop { background: var(--overlay); backdrop-filter: blur(4px); }
 @media (prefers-color-scheme: light) {
   :root:not([data-theme]) { --gallery-action: #000; --gallery-action-text: #fff; --viewer-bg: #f7f7f5; --viewer-control: #111; --viewer-disabled: #aaa; --viewer-info-bg: #fff; --viewer-info-muted: #666; }
 }
-.popup { width: 290px; padding: 24px; }
+.popup { width: 260px; padding: 20px; }
 .popup h1 { margin-bottom: 22px; font-size: 22px; line-height: 1.18; }
 .popup button { min-height: 44px; border-radius: 28px; box-shadow: none; }
 .popup .primary, .archive-page .primary { color: var(--gallery-action-text); background: var(--gallery-action); }
