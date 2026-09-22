@@ -343,7 +343,7 @@ dialog::backdrop { background: var(--overlay); backdrop-filter: blur(4px); }
 .popup { width: 260px; padding: 20px; }
 .popup h1 { margin-bottom: 22px; font-size: 22px; line-height: 1.18; }
 .popup button { min-height: 44px; border-radius: 28px; box-shadow: none; }
-.popup > button { box-sizing: border-box; width: calc(100% - 24px); margin-right: auto; margin-left: auto; }
+.popup > button { box-sizing: border-box; width: 100%; }
 .popup .primary, .archive-page .primary { color: var(--gallery-action-text); background: var(--gallery-action); }
 .archive-page dialog { border-radius: 28px; background: var(--surface); box-shadow: none; }
 .archive-page dialog button { border-radius: 28px; }
