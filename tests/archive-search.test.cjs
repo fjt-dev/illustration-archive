@@ -28,19 +28,17 @@ function candidatesFor(works, query) {
   return context.searchCandidates(query);
 }
 
-test('Escape dismisses suggestions without clearing the active search', () => {
+test('Escape closes the search overlay without clearing the active search', () => {
   let keydown;
   let prevented = false;
   let stopped = false;
-  let hidden = false;
-  let blurred = false;
+  let closed = false;
   const context = {
     activeSearchSuggestion: -1,
-    hideSearchSuggestions() { hidden = true; },
+    closeSearch() { closed = true; },
     searchSuggestions: { hidden: false },
     searchInput: {
-      addEventListener(_type, listener) { keydown = listener; },
-      blur() { blurred = true; }
+      addEventListener(_type, listener) { keydown = listener; }
     },
     searchSuggestionList: { querySelectorAll() { return []; } }
   };
@@ -56,8 +54,32 @@ test('Escape dismisses suggestions without clearing the active search', () => {
 
   assert.equal(prevented, true);
   assert.equal(stopped, true);
-  assert.equal(hidden, true);
-  assert.equal(blurred, true);
+  assert.equal(closed, true);
+});
+
+test('search launcher opens the modal and focuses its input', () => {
+  const sourceText = source.slice(source.indexOf('function openSearch()'), source.indexOf('searchLaunch.addEventListener("click"'));
+  let shown = false;
+  let focused = false;
+  let rendered = false;
+  const context = {
+    searchDialog: {
+      open: false,
+      showModal() { shown = true; this.open = true; },
+      close() { this.open = false; }
+    },
+    searchInput: { focus() { focused = true; } },
+    renderSearchSuggestions() { rendered = true; }
+  };
+  vm.createContext(context);
+  vm.runInContext(sourceText, context);
+
+  context.openSearch();
+  assert.equal(shown, true);
+  assert.equal(focused, true);
+  assert.equal(rendered, true);
+  context.closeSearch();
+  assert.equal(context.searchDialog.open, false);
 });
 
 test('hidden suggestions ignore stale option nodes during keyboard navigation', () => {
@@ -114,6 +136,57 @@ test('an empty query has no generated suggestions', () => {
   assert.deepEqual(Array.from(candidatesFor([{ title: 'Artwork', tags: ['Tag'] }], '  ')), []);
 });
 
+test('empty search offers five useful tags and omits recent or ubiquitous tags', () => {
+  const context = {
+    searchHistory: ['#Recent'],
+    popularTags: () => [
+      { label: 'Ubiquitous', hidden: true },
+      { label: 'Recent', hidden: false },
+      ...Array.from({ length: 7 }, (_, index) => ({ label: `Tag ${index + 1}`, hidden: false }))
+    ]
+  };
+  vm.createContext(context);
+  vm.runInContext(searchCandidatesSource, context);
+
+  assert.deepEqual(Array.from(context.suggestedSearchTags(), (tag) => tag.label), [
+    'Tag 1', 'Tag 2', 'Tag 3', 'Tag 4', 'Tag 5'
+  ]);
+});
+
+test('opening search with no query or history renders tag options', () => {
+  const renderSource = source.slice(
+    source.indexOf('function renderSearchSuggestions()'),
+    source.indexOf('function setActiveSearchSuggestion(')
+  );
+  const createElement = (tagName) => ({
+    tagName,
+    children: [],
+    dataset: {},
+    append(...children) { this.children.push(...children); },
+    setAttribute() {},
+    addEventListener() {}
+  });
+  const suggestionList = { replaceChildren(...children) { this.children = children; } };
+  const context = {
+    document: { createElement },
+    searchInput: { value: '', removeAttribute() {}, setAttribute() {} },
+    searchHistory: [],
+    SEARCH_SUGGESTION_LIMIT: 4,
+    suggestedSearchTags: () => [{ label: 'Landscape' }, { label: 'Portrait' }],
+    searchSuggestions: { hidden: true },
+    searchSuggestionsHeading: {},
+    searchSuggestionList: suggestionList,
+    message: (key) => key
+  };
+  vm.createContext(context);
+  vm.runInContext(renderSource, context);
+
+  context.renderSearchSuggestions();
+  assert.equal(context.searchSuggestions.hidden, false);
+  assert.equal(context.searchSuggestionsHeading.textContent, 'tags');
+  assert.deepEqual(suggestionList.children.map(row => row.children[0].textContent), ['#Landscape', '#Portrait']);
+});
+
 test('search normalizes width, kana, case, and tag prefixes', () => {
   const context = {};
   vm.createContext(context);
@@ -164,6 +237,7 @@ test('search history keeps four recent unique queries', () => {
 test('a search history entry can be removed independently', () => {
   let saved = [];
   let focused = false;
+  let rendered = false;
   const context = {
     chrome: {
       storage: {
@@ -178,6 +252,7 @@ test('a search history entry can be removed independently', () => {
     console,
     searchHistory: ['Cat', 'Dog', 'Bird'],
     SEARCH_SUGGESTION_LIMIT: 4,
+    renderSearchSuggestions() { rendered = true; },
     searchInput: { focus() { focused = true; } }
   };
   vm.createContext(context);
@@ -187,5 +262,6 @@ test('a search history entry can be removed independently', () => {
   context.removeSearchHistory('dog');
 
   assert.deepEqual(saved, ['Cat', 'Bird']);
+  assert.equal(rendered, true);
   assert.equal(focused, true);
 });

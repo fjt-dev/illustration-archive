@@ -8,6 +8,37 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
   let renderToken = 0;
   let previousFocus = null;
   let activeNavigation = null;
+  const thumbnailRequests = new WeakMap();
+  const thumbnailQueue = [];
+  let thumbnailConversions = 0;
+
+  async function compactThumbnail(blob, isCurrent) {
+    if (typeof createImageBitmap !== "function" || typeof OffscreenCanvas !== "function") return blob;
+    if (thumbnailConversions >= 2) await new Promise((resolve) => thumbnailQueue.push(resolve));
+    thumbnailConversions += 1;
+    let bitmap;
+    let canvas;
+    try {
+      if (!isCurrent()) return null;
+      bitmap = await createImageBitmap(blob, { resizeWidth: 480, resizeQuality: "medium" });
+      if (bitmap.height > 960) {
+        bitmap.close();
+        bitmap = null;
+        bitmap = await createImageBitmap(blob, { resizeHeight: 960, resizeQuality: "medium" });
+      }
+      if (!isCurrent()) return null;
+      canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+      canvas.getContext("2d").drawImage(bitmap, 0, 0);
+      return await canvas.convertToBlob({ type: "image/webp", quality: 0.78 });
+    } catch {
+      return blob;
+    } finally {
+      bitmap?.close();
+      if (canvas) { canvas.width = 0; canvas.height = 0; }
+      thumbnailConversions -= 1;
+      thumbnailQueue.shift()?.();
+    }
+  }
 
   function openViewer() {
     const wasHidden = panel.hidden;
@@ -59,6 +90,8 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
   }
 
   async function loadThumbnail(node, work, onLoad) {
+    const request = { url: "" };
+    thumbnailRequests.set(node, request);
     if (work.imageCount === 0) {
       node.textContent = message("noImage");
       return;
@@ -66,20 +99,42 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     let image;
     try { image = await loadStoredImage(work, 0); }
     catch {
+      if (thumbnailRequests.get(node) === request) node.textContent = message("imageLoadFailed");
+      return;
+    }
+    if (thumbnailRequests.get(node) !== request || !node.isConnected) return;
+    if (!image) {
       node.textContent = message("imageLoadFailed");
       return;
     }
-    if (!image || !node.isConnected) return;
-    const url = URL.createObjectURL(image.blob);
+    const previewBlob = await compactThumbnail(image.blob, () => thumbnailRequests.get(node) === request && node.isConnected);
+    if (!previewBlob || thumbnailRequests.get(node) !== request || !node.isConnected) return;
+    request.url = URL.createObjectURL(previewBlob);
     const thumbnail = new Image();
     thumbnail.alt = "";
-    thumbnail.onload = () => {
-      if (node.isConnected) onLoad?.(thumbnail);
-      URL.revokeObjectURL(url);
+    const releaseUrl = () => {
+      if (!request.url) return;
+      URL.revokeObjectURL(request.url);
+      request.url = "";
     };
-    thumbnail.onerror = () => URL.revokeObjectURL(url);
+    thumbnail.onload = () => {
+      if (thumbnailRequests.get(node) === request && node.isConnected) onLoad?.(thumbnail);
+      releaseUrl();
+    };
+    thumbnail.onerror = releaseUrl;
     node.replaceChildren(thumbnail);
-    thumbnail.src = url;
+    thumbnail.src = request.url;
+  }
+
+  function unloadThumbnail(node) {
+    const request = thumbnailRequests.get(node);
+    if (request?.url) {
+      URL.revokeObjectURL(request.url);
+      request.url = "";
+    }
+    thumbnailRequests.delete(node);
+    node.querySelector("img")?.removeAttribute("src");
+    node.replaceChildren();
   }
 
   async function showImages(work, { works = null, index = -1, startAtEnd = false } = {}) {
@@ -336,5 +391,5 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     activeNavigation?.(works);
   }
 
-  return { close: closeViewer, loadThumbnail, showImages, showMetadata, updateNavigation };
+  return { close: closeViewer, loadThumbnail, unloadThumbnail, showImages, showMetadata, updateNavigation };
 }

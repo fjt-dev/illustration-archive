@@ -13,10 +13,10 @@ test('dark selection actions remain distinguishable from artwork', () => {
   assert.match(rule, /box-shadow:\s*0 14px 36px/);
 });
 
-test('light selection actions keep the high-contrast black surface', () => {
+test('light selection actions use the shared neutral dark surface', () => {
   assert.match(
     styles,
-    /:root\[data-theme="light"\] \.archive-page \.selection-actions-controls \{[^}]*background:\s*#000/
+    /:root\[data-theme="light"\] \.archive-page \.selection-actions-controls \{\s*background:\s*#29292d;\s*\}/
   );
 });
 
@@ -33,6 +33,6 @@ test('viewer pagination keeps stable contrast over artwork backdrops', () => {
   const rule = styles.match(/\.viewer-pagination \{([\s\S]*?)\}/)?.[1] || '';
 
   assert.match(rule, /color:\s*#fff/);
-  assert.match(rule, /background:\s*rgb\(17 19 24 \/ 82%\)/);
+  assert.match(rule, /background:\s*rgb\(20 20 22 \/ 82%\)/);
   assert.match(rule, /border-radius:\s*999px/);
 });

@@ -17,7 +17,7 @@ function renderAtOffset(mode, reset) {
     document: { querySelectorAll: () => [] },
     window: { scrollTo(options) { assert.equal(options.behavior, 'instant'); context.scrollY = options.top; events.push('scroll'); } },
     scrollY: 4000,
-    grid: { classList: { toggle() {} }, replaceChildren(...cards) { context.cards = cards; events.push('replace'); } },
+    grid: { classList: { toggle() {} }, querySelectorAll() { return []; }, replaceChildren(...cards) { context.cards = cards; events.push('replace'); } },
     card: item => item, scheduleMasonryLayout() {},
     updateScrollFooter() { events.push('observe'); }, updateSelectionControls() {}
   };
