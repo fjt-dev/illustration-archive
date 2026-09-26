@@ -101,7 +101,15 @@
     <button id="close" aria-label="Close" data-i18n-attrs="aria-label:close"><span aria-hidden="true">×</span></button>
     <div id="viewer-content"></div>
   </aside>
-  <dialog id="metadata-viewer" class="metadata-dialog"><button id="close-metadata" aria-label="Close" data-i18n="close" data-i18n-attrs="aria-label:close">Close</button><div id="metadata-content"></div></dialog>
+  <dialog id="metadata-viewer" class="metadata-dialog" aria-labelledby="metadata-dialog-title">
+    <div class="metadata-dialog-heading">
+      <h2 id="metadata-dialog-title" data-i18n="archivedMetadata">Archived metadata</h2>
+      <button id="close-metadata" class="dialog-close" type="button" aria-label="Close" data-i18n-attrs="aria-label:close">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"></path></svg>
+      </button>
+    </div>
+    <div id="metadata-content"></div>
+  </dialog>
   <dialog id="shortcuts-dialog" class="shortcuts-dialog">
     <h2 data-i18n="shortcuts">Keyboard shortcuts</h2>
     <dl>
