@@ -356,8 +356,6 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
   }
 
   function showMetadata(work) {
-    const title = document.createElement("h2");
-    title.textContent = message("archivedMetadata");
     const fields = [
       [message("artworkId"), work.id], [message("title"), work.title], [message("artist"), work.creatorName || message("unknown")],
       [message("artistId"), work.creatorId || message("unknown")], [message("tags"), work.tags?.length ? work.tags.join(" / ") : message("none")],
@@ -377,7 +375,7 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
       description.textContent = String(value ?? "");
       list.append(term, description);
     });
-    metadataContent.replaceChildren(title, list);
+    metadataContent.replaceChildren(list);
     metadataDialog.showModal();
   }
 

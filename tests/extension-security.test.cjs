@@ -11,7 +11,7 @@ const contentSource = readFileSync(path.join(root, 'src/content.js'), 'utf8');
 test('privileged page button only accepts a trusted click and confirms the operation', () => {
   assert.match(contentSource, /if \(!event\?\.isTrusted\) return;/);
   assert.match(contentSource, /confirm\(message\("confirmRecordArtwork"\)\)/);
-  assert.match(contentSource, /CONTENT_SCRIPT_VERSION = 9/);
+  assert.match(contentSource, /CONTENT_SCRIPT_VERSION = 10/);
 });
 
 test('invalidated extension contexts fall back without throwing', () => {
@@ -34,7 +34,7 @@ test('invalidated extension contexts fall back without throwing', () => {
 
 test('image Referer rule is dynamic and restricted to this extension', () => {
   const manifest = JSON.parse(readFileSync(path.join(root, 'manifest.json'), 'utf8'));
-  assert.equal(manifest.version, '3.7.0');
+  assert.equal(manifest.version, '3.7.1');
   assert.equal(manifest.declarative_net_request, undefined);
   assert.equal(existsSync(path.join(root, 'rules.json')), false);
   assert.match(backgroundSource, /initiatorDomains: \[chrome\.runtime\.id\]/);

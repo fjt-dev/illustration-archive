@@ -249,8 +249,8 @@ dialog::backdrop { background: var(--overlay); }
 .metadata-list dd { overflow-wrap: anywhere; white-space: pre-wrap; }
 .shortcuts-dialog { width: min(460px, calc(100vw - 32px)); padding: 28px; overflow: auto; }
 .tag-dialog { width: min(720px, calc(100vw - 32px)); max-height: min(720px, calc(100vh - 32px)); padding: 28px; overflow: hidden; }
-.tag-dialog-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
-.tag-dialog-heading h2 { margin: 0; font-size: 22px; }
+.tag-dialog-heading, .metadata-dialog-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+.tag-dialog-heading h2, .metadata-dialog-heading h2 { margin: 0; font-size: 22px; }
 .tag-dialog-heading p { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
 .dialog-close { display: grid; flex: 0 0 36px; width: 36px; height: 36px; padding: 0; place-items: center; border: 1px solid var(--border); border-radius: 50%; color: var(--muted); background: transparent; }
 .dialog-close:hover { color: var(--text); background: var(--control-hover); }
@@ -549,7 +549,8 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
 }
 #viewer-content .viewer-heading:hover,
 #viewer-content .viewer-heading:has(:focus-visible) {
-  width: min(280px, calc(100vw - 56px));
+  width: max-content;
+  max-width: min(400px, calc(100vw - 200px));
 }
 #viewer-content .viewer-heading:hover .viewer-heading-trigger,
 #viewer-content .viewer-heading:has(:focus-visible) .viewer-heading-trigger {
@@ -566,11 +567,11 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
 #viewer-content .viewer-heading:hover .viewer-heading-details,
 #viewer-content .viewer-heading:has(:focus-visible) .viewer-heading-details { display: block; }
 @media (hover: none) {
-  #viewer-content .viewer-heading:focus-within { width: min(280px, calc(100vw - 28px)); }
+  #viewer-content .viewer-heading:focus-within { width: max-content; max-width: min(400px, calc(100vw - 200px)); }
   #viewer-content .viewer-heading:focus-within .viewer-heading-trigger { position: absolute; top: 0; left: 0; opacity: 0; pointer-events: none; }
   #viewer-content .viewer-heading:focus-within .viewer-heading-details { display: block; }
 }
-#viewer-content .viewer-heading h2 { overflow: hidden; margin: 0; font-size: 18px; font-weight: 600; line-height: 1.18; text-overflow: ellipsis; white-space: nowrap; }
+#viewer-content .viewer-heading h2 { display: -webkit-box; overflow: hidden; margin: 0; font-size: 18px; font-weight: 600; line-height: 1.18; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
 #viewer-content .viewer-creator { overflow: hidden; margin: 8px 0 0; color: var(--viewer-info-muted); font-size: 14px; line-height: 1.21; text-overflow: ellipsis; white-space: nowrap; }
 #viewer-content .viewer-source { display: flex; align-items: center; flex-wrap: wrap; gap: 5px 16px; margin-top: 12px; color: var(--viewer-info-muted); font-size: 14px; line-height: 1.21; }
 #viewer-content .viewer-source a { padding: 0; color: var(--viewer-control); background: transparent; text-decoration: underline; text-underline-offset: 3px; }
@@ -698,8 +699,6 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
 #close:hover { border-color: var(--viewer-control); color: var(--viewer-bg); background: var(--viewer-control); transform: none; }
 #close:active { transform: scale(.97); }
 .metadata-dialog { width: min(760px, calc(100vw - 32px)); padding: 28px; overflow: auto; }
-#close-metadata { display: block; margin: 0 0 0 auto; border-radius: 28px; }
-#metadata-content h2 { margin: 4px 0 0; }
 .recovery-panel { border: 0; border-radius: 28px; box-shadow: none; }
 .recovery-actions a { border-radius: 28px; }
 
@@ -717,6 +716,8 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
   .archive-page .toolbar > * { flex: 1 1 auto; }
   #viewer-content { padding: 0; }
   #viewer-content .viewer-heading { top: auto; bottom: 76px; left: 14px; max-width: min(280px, calc(100vw - 28px)); }
+  #viewer-content .viewer-heading:hover,
+  #viewer-content .viewer-heading:has(:focus-visible) { max-width: min(400px, calc(100vw - 88px)); }
   #viewer-content .viewer-heading h2 { font-size: 18px; }
   #viewer-content .viewer-creator, #viewer-content .viewer-source { font-size: 14px; }
   .viewer-controls > button { bottom: 14px; width: 46px; height: 46px; font-size: 21px; }
@@ -780,6 +781,7 @@ html.viewer-open, html.viewer-open body { overflow: hidden; }
 @media (max-width: 650px) {
   #viewer .viewer-favorite { top: auto; right: 14px; bottom: 72px; width: 46px; height: 46px; }
   #viewer-content .viewer-heading { max-width: min(280px, calc(100vw - 88px)); }
+  #viewer-content .viewer-heading:focus-within { max-width: min(400px, calc(100vw - 88px)); }
 }
 @media (prefers-reduced-motion: reduce) {
   .view-mode::before, .view-mode button, .view-mode button svg { transition: none; }
