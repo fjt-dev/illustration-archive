@@ -105,7 +105,7 @@ function createRecordButton() {
   Object.assign(button.style, {
     position: "fixed", right: "24px", bottom: "104px", zIndex: "2147483646",
     minWidth: "88px", height: "42px", padding: "0 16px", border: "1px solid rgba(255,255,255,.4)",
-    borderRadius: "21px", color: "white", background: "#0096fa",
+    borderRadius: "21px", color: "#1c1c1e", background: "#0096fa",
     boxShadow: "0 4px 14px rgba(0,0,0,.24)",
     font: "600 14px system-ui, sans-serif", cursor: "pointer"
   });
