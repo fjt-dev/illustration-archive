@@ -24,6 +24,8 @@ localizeDocument();
 const themeButton = document.querySelector("#theme-toggle");
 const themeMenu = document.querySelector("#theme-menu");
 const searchInput = document.querySelector("#search");
+const searchLaunch = document.querySelector("#open-search");
+const searchDialog = document.querySelector("#search-dialog");
 const searchBox = document.querySelector(".search-box");
 const searchSuggestions = document.querySelector("#search-suggestions");
 const searchSuggestionsHeading = document.querySelector("#search-suggestions-heading");
@@ -123,11 +125,17 @@ const scrollObserver = new IntersectionObserver((entries) => {
 }, { rootMargin: "600px 0px" });
 const thumbnailObserver = new IntersectionObserver((entries) => {
   for (const entry of entries) {
-    if (!entry.isIntersecting) continue;
-    thumbnailObserver.unobserve(entry.target);
-    archiveViewer.loadThumbnail(entry.target.querySelector(".thumb-content"), entry.target.work, onThumbnailLoaded);
+    const node = entry.target.querySelector(".thumb-content");
+    if (entry.isIntersecting) {
+      if (node.dataset.imageState === "loading") continue;
+      node.dataset.imageState = "loading";
+      archiveViewer.loadThumbnail(node, entry.target.work, onThumbnailLoaded);
+    } else if (node.dataset.imageState) {
+      delete node.dataset.imageState;
+      archiveViewer.unloadThumbnail(node);
+    }
   }
-}, { rootMargin: "600px 0px" });
+}, { rootMargin: "400px 0px" });
 let masonryLayoutFrame = 0;
 function updateMasonryTile(article) {
   if (viewMode !== "infinite" || !article.isConnected) return;
@@ -224,8 +232,34 @@ if (!firstRunState.hasUsageConsent) {
   onboarding.showModal();
 }
 
+function openSearch() {
+  if (searchDialog.open) return;
+  searchDialog.showModal();
+  searchInput.focus({ preventScroll: true });
+  renderSearchSuggestions();
+}
+
+function closeSearch() {
+  if (searchDialog.open) searchDialog.close();
+}
+
+function updateSearchLaunch() {
+  const query = searchInput.value.trim();
+  searchLaunch.querySelector("span").textContent = query || message("search");
+  searchLaunch.classList.toggle("has-query", Boolean(query));
+}
+
+searchLaunch.addEventListener("click", openSearch);
+searchDialog.addEventListener("click", (event) => {
+  if (event.target === searchDialog) closeSearch();
+});
+searchDialog.addEventListener("close", () => {
+  hideSearchSuggestions();
+  searchLaunch.focus({ preventScroll: true });
+});
 searchInput.addEventListener("input", (event) => {
   searchQuery = normalizeSearchText(event.target.value);
+  updateSearchLaunch();
   applyFilters();
   renderSearchSuggestions();
 });
@@ -255,14 +289,14 @@ searchInput.addEventListener("keydown", (event) => {
     else {
       rememberSearch(searchInput.value);
       hideSearchSuggestions();
+      closeSearch();
     }
     return;
   }
   if (event.key === "Escape") {
     event.preventDefault();
     event.stopPropagation();
-    hideSearchSuggestions();
-    searchInput.blur();
+    closeSearch();
   }
 });
 tagSearchInput.addEventListener("input", (event) => {
@@ -293,7 +327,7 @@ document.querySelector("#usage-consent-agree").addEventListener("click", async (
 });
 
 document.addEventListener("click", (event) => {
-  if (!searchBox.contains(event.target)) hideSearchSuggestions();
+  if (!searchDialog.open && !searchBox.contains(event.target)) hideSearchSuggestions();
   if (themeMenu.open && !themeMenu.contains(event.target)) themeMenu.removeAttribute("open");
   if (sortMenu.open && !sortMenu.contains(event.target)) sortMenu.removeAttribute("open");
   document.querySelectorAll(".card-menu[open]").forEach((menu) => {
@@ -306,6 +340,11 @@ window.addEventListener("resize", () => {
 });
 document.addEventListener("keydown", (event) => {
   const editing = event.target.matches("input, textarea, [contenteditable='true']");
+  if (event.key === "Escape" && searchDialog.open) {
+    event.preventDefault();
+    closeSearch();
+    return;
+  }
   if (event.key === "Escape" && !viewer.hidden && !metadataViewer.open) {
     event.preventDefault();
     archiveViewer.close();
@@ -323,14 +362,9 @@ document.addEventListener("keydown", (event) => {
     sortToggle.focus();
     return;
   }
-  if (event.key === "Escape" && event.target.matches("#search")) {
-    event.preventDefault();
-    event.target.blur();
-    return;
-  }
   if (event.key === "/" && !editing && !event.metaKey && !event.ctrlKey && !event.altKey) {
     event.preventDefault();
-    document.querySelector("#search").focus();
+    openSearch();
     return;
   }
   if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "a" && !editing) {
@@ -510,19 +544,39 @@ function searchCandidates(query) {
     || a.label.localeCompare(b.label, uiLocale));
 }
 
+function suggestedSearchTags() {
+  const recentQueries = new Set(searchHistory.map((query) => searchTokens(query).join(" ")));
+  return popularTags()
+    .filter((tag) => !tag.hidden && !recentQueries.has(searchTokens(tag.label).join(" ")))
+    .slice(0, 5);
+}
+
 function renderSearchSuggestions() {
   const query = searchInput.value.trim();
-  const showingHistory = !query;
-  const values = query
-    ? searchCandidates(query).slice(0, SEARCH_SUGGESTION_LIMIT).map((candidate) => candidate.label)
-    : searchHistory.slice(0, SEARCH_SUGGESTION_LIMIT);
-  if (!values.length) {
+  const recent = query ? [] : searchHistory.slice(0, SEARCH_SUGGESTION_LIMIT);
+  const tags = query ? [] : suggestedSearchTags();
+  const entries = query
+    ? searchCandidates(query).slice(0, SEARCH_SUGGESTION_LIMIT)
+      .map((candidate) => ({ value: candidate.label, label: candidate.label, kind: "suggestion" }))
+    : [
+      ...recent.map((value) => ({ value, label: value, kind: "history" })),
+      ...tags.map((tag) => ({ value: tag.label, label: `#${tag.label}`, kind: "tag" }))
+    ];
+  if (!entries.length) {
     hideSearchSuggestions();
     return;
   }
 
-  searchSuggestionsHeading.textContent = message(query ? "searchSuggestions" : "recentSearches");
-  const rows = values.map((value, index) => {
+  searchSuggestionsHeading.textContent = message(query ? "searchSuggestions" : recent.length ? "recentSearches" : "tags");
+  const rows = entries.flatMap((entry, index) => {
+    const nodes = [];
+    if (!query && recent.length && tags.length && index === recent.length) {
+      const heading = document.createElement("p");
+      heading.className = "search-suggestion-section-title";
+      heading.textContent = message("tags");
+      heading.setAttribute("role", "presentation");
+      nodes.push(heading);
+    }
     const row = document.createElement("div");
     row.className = "search-suggestion-row";
     row.setAttribute("role", "none");
@@ -533,25 +587,26 @@ function renderSearchSuggestions() {
     button.className = "search-suggestion";
     button.setAttribute("role", "option");
     button.setAttribute("aria-selected", "false");
-    button.dataset.searchValue = value;
-    button.textContent = value;
-    button.addEventListener("click", () => selectSearchSuggestion(value));
+    button.dataset.searchValue = entry.value;
+    button.textContent = entry.label;
+    button.addEventListener("click", () => selectSearchSuggestion(entry.value));
     row.append(button);
 
-    if (showingHistory) {
+    if (entry.kind === "history") {
       const remove = document.createElement("button");
       remove.type = "button";
       remove.className = "remove-search-history";
-      remove.setAttribute("aria-label", message("deleteSearchHistory", value));
-      remove.title = message("deleteSearchHistory", value);
+      remove.setAttribute("aria-label", message("deleteSearchHistory", entry.value));
+      remove.title = message("deleteSearchHistory", entry.value);
       remove.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7 7 17"></path></svg>';
       remove.addEventListener("click", (event) => {
         event.stopPropagation();
-        removeSearchHistory(value);
+        removeSearchHistory(entry.value);
       });
       row.append(remove);
     }
-    return row;
+    nodes.push(row);
+    return nodes;
   });
   searchSuggestionList.replaceChildren(...rows);
   activeSearchSuggestion = -1;
@@ -583,10 +638,11 @@ function hideSearchSuggestions() {
 function selectSearchSuggestion(value) {
   searchInput.value = value;
   searchQuery = normalizeSearchText(value);
+  updateSearchLaunch();
   rememberSearch(value);
   applyFilters();
-  searchInput.focus();
   hideSearchSuggestions();
+  closeSearch();
 }
 
 function rememberSearch(value) {
@@ -602,6 +658,7 @@ function removeSearchHistory(value) {
   const normalized = normalizeSearchText(value);
   searchHistory = searchHistory.filter((entry) => normalizeSearchText(entry) !== normalized);
   saveSearchHistory();
+  renderSearchSuggestions();
   searchInput.focus({ preventScroll: true });
 }
 
@@ -623,6 +680,7 @@ function render(items, { reset = false } = {}) {
   renderedCount = viewMode === "infinite"
     ? Math.min(items.length, reset ? BATCH_SIZE : Math.max(BATCH_SIZE, renderedCount))
     : items.length;
+  for (const node of grid.querySelectorAll(".thumb-content")) archiveViewer.unloadThumbnail(node);
   grid.replaceChildren(...items.slice(0, renderedCount).map(card));
   scheduleMasonryLayout();
   updateScrollFooter();
@@ -676,11 +734,12 @@ function renderTagFilters() {
     applyFilters();
   });
 
-  const buttons = tags.map((tag, index) => {
+  const buttons = tags.map((tag) => {
     const button = document.createElement("button");
     button.type = "button";
-    button.className = `tag-filter tag-color-${index % 8}`;
+    button.className = "tag-filter";
     button.textContent = `#${tag.label}`;
+    button.title = button.textContent;
     button.setAttribute("aria-pressed", String(activeTags.has(tag.key)));
     button.addEventListener("click", () => {
       activeTags.has(tag.key) ? activeTags.delete(tag.key) : activeTags.add(tag.key);
@@ -868,15 +927,14 @@ function card(work) {
     item.addEventListener("click", () => article.querySelector(".card-menu").removeAttribute("open"));
   });
   article.work = work;
-  article.title = `${work.title} — ${work.creatorName || message("unknownArtist")}`;
-  if (viewMode === "infinite") thumbnailObserver.observe(article);
-  else archiveViewer.loadThumbnail(article.querySelector(".thumb-content"), work);
+  article.setAttribute("aria-label", `${work.title} — ${work.creatorName || message("unknownArtist")}`);
+  thumbnailObserver.observe(article);
   return article;
 }
 
 function getArchiveReturnFocus() {
   const favoriteFilter = document.querySelector(".favorite-filter");
-  return favoriteFilter?.getClientRects().length ? favoriteFilter : searchInput;
+  return favoriteFilter?.getClientRects().length ? favoriteFilter : searchLaunch;
 }
 
 function createFavoriteButton(work) {

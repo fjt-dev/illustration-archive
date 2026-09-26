@@ -9,15 +9,11 @@
       <span id="folder-name" data-i18n="archiveFolderNotSelected">Archive folder: Not selected</span>
       <button id="restore-folder-access" class="folder-access" hidden data-i18n="restoreAccess">Restore access</button>
       <label class="archive-include-images"><span data-i18n="includeImages">Include images</span><input id="archive-include-images" type="checkbox" role="switch"></label>
-      <div class="search-box">
-        <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg>
-        <input id="search" type="search" role="combobox" autocomplete="off" aria-autocomplete="list" aria-controls="search-suggestion-list" aria-expanded="false" placeholder="Search by title, artist, or tag" data-i18n-attrs="placeholder:searchPlaceholder,aria-label:searchPlaceholder">
+      <button id="open-search" class="search-launch" type="button" aria-haspopup="dialog" aria-controls="search-dialog" aria-label="Search by title, artist, or tag" data-i18n-attrs="aria-label:searchPlaceholder">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg>
+        <span data-i18n="search">Search</span>
         <kbd>/</kbd>
-        <div id="search-suggestions" class="search-suggestions" hidden>
-          <p id="search-suggestions-heading"></p>
-          <div id="search-suggestion-list" role="listbox" aria-labelledby="search-suggestions-heading"></div>
-        </div>
-      </div>
+      </button>
       <details id="sort-menu" class="sort-menu">
         <summary id="sort-toggle" aria-haspopup="menu" aria-label="Sort" data-i18n-attrs="aria-label:sort">
           <span id="sort-toggle-label" data-i18n="sortArchivedNewest">Recently archived</span>
@@ -68,6 +64,18 @@
       </div>
     </div>
   </header>
+  <dialog id="search-dialog" class="search-dialog" aria-label="Search by title, artist, or tag" data-i18n-attrs="aria-label:searchPlaceholder">
+    <div class="search-panel">
+      <div class="search-box">
+        <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg>
+        <input id="search" type="search" role="combobox" autocomplete="off" aria-autocomplete="list" aria-controls="search-suggestion-list" aria-expanded="false" placeholder="Search by title, artist, or tag" data-i18n-attrs="placeholder:searchPlaceholder,aria-label:searchPlaceholder">
+        <div id="search-suggestions" class="search-suggestions" hidden>
+          <p id="search-suggestions-heading"></p>
+          <div id="search-suggestion-list" role="listbox" aria-label="Suggestions" data-i18n-attrs="aria-label:searchSuggestions"></div>
+        </div>
+      </div>
+    </div>
+  </dialog>
   <div class="context-bar">
     <nav id="tag-filters" class="tag-filters" aria-label="Filter by tag" data-i18n-attrs="aria-label:filterByTag" hidden></nav>
     <div id="selection-actions" class="selection-actions" aria-label="Actions for selected artworks" data-i18n-attrs="aria-label:selectedActions" hidden>
@@ -168,7 +176,7 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5 4.3 13A5.2 5.2 0 0 1 12 6a5.2 5.2 0 0 1 7.7 7Z"></path></svg>
         </button>
         <details class="card-menu">
-          <summary aria-label="Artwork menu" title="Menu" data-i18n-attrs="aria-label:artworkMenu,title:menu"></summary>
+          <summary aria-label="Artwork menu" data-i18n-attrs="aria-label:artworkMenu"></summary>
           <div class="card-menu-items">
             <button data-metadata data-i18n="showMetadata">Show metadata</button>
             <a data-source target="_blank" rel="noreferrer" data-i18n="openSourcePage">Open source page</a>

@@ -250,18 +250,18 @@ test('closing still restores a connected original focus target without a delayed
   assert.equal(document.activeElement, card);
 });
 
-test('closing with a hidden Favorites filter returns focus to search', async () => {
+test('closing with a hidden Favorites filter returns focus to the search launcher', async () => {
   const source = readFileSync(join(__dirname, '../src/archive.js'), 'utf8');
   let favoriteFilter = null;
   const filterContainer = { hidden: false };
   const archiveContext = {
-    document: { querySelector: () => favoriteFilter }, searchInput: null
+    document: { querySelector: () => favoriteFilter }, searchLaunch: null
   };
   vm.createContext(archiveContext);
   vm.runInContext(source.slice(source.indexOf('function getArchiveReturnFocus()'), source.indexOf('function createFavoriteButton(')), archiveContext);
   const { viewer, content, element, document, flushFrames } = setupViewer(() => archiveContext.getArchiveReturnFocus());
   const search = element();
-  archiveContext.searchInput = search;
+  archiveContext.searchLaunch = search;
   assert.equal(archiveContext.getArchiveReturnFocus(), search);
   favoriteFilter = element();
   favoriteFilter.getClientRects = () => filterContainer.hidden ? [] : [{}];

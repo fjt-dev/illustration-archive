@@ -13,6 +13,7 @@
   "archiveFolderNamed": { "message": "Archive folder: $NAME$", "placeholders": { "name": { "content": "$1" } } },
   "restoreAccess": { "message": "Restore access" },
   "includeImages": { "message": "Include images" },
+  "search": { "message": "Search" },
   "searchPlaceholder": { "message": "Search by title, artist, or tag" },
   "searchSuggestions": { "message": "Suggestions" },
   "recentSearches": { "message": "History" },

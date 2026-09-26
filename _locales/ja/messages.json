@@ -13,6 +13,7 @@
   "archiveFolderNamed": { "message": "記録先: $NAME$", "placeholders": { "name": { "content": "$1" } } },
   "restoreAccess": { "message": "アクセスを再許可" },
   "includeImages": { "message": "画像を含める" },
+  "search": { "message": "検索" },
   "searchPlaceholder": { "message": "タイトル・作者・タグで検索" },
   "searchSuggestions": { "message": "検索候補" },
   "recentSearches": { "message": "履歴" },
