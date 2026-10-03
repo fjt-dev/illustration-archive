@@ -130,7 +130,7 @@ input { min-width: 320px; padding: 11px; border: 1px solid var(--border-strong);
 .sort-menu-items button[aria-checked="true"]::after { justify-self: center; width: 8px; height: 4px; border-bottom: 2px solid var(--focus-ring); border-left: 2px solid var(--focus-ring); content: ""; transform: translateY(-1px) rotate(-45deg); }
 .toolbar { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
 .archive-include-images { display: flex; align-items: center; box-sizing: border-box; height: 40px; gap: 7px; padding: 0 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); font-size: 13px; font-weight: 600; cursor: pointer; }
-.folder-access { border: 1px solid var(--border-strong); color: var(--text); background: var(--surface-muted); font-size: 12px; font-weight: 600; }
+.folder-access { border: 1px solid var(--border-strong); color: var(--danger); background: var(--surface-muted); font-size: 12px; font-weight: 600; }
 .folder-access:hover { background: var(--control-hover); }
 .context-bar { display: grid; box-sizing: border-box; min-height: 48px; max-width: 1200px; margin: 16px auto 0; }
 .context-bar > * { grid-area: 1 / 1; }
