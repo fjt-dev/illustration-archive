@@ -263,7 +263,7 @@ dialog::backdrop { background: var(--overlay); }
 .metadata-list dt { color: var(--muted); font-size: 13px; font-weight: 600; }
 .metadata-list dd { overflow-wrap: anywhere; white-space: pre-wrap; }
 .shortcuts-dialog { width: min(460px, calc(100vw - 32px)); padding: 28px; overflow: auto; }
-.tag-dialog { width: min(720px, calc(100vw - 32px)); max-height: min(720px, calc(100vh - 32px)); padding: 28px; overflow: hidden; }
+.tag-dialog { width: min(720px, calc(100vw - 32px)); max-height: min(720px, calc(100vh - 32px)); padding: 28px; overflow-x: hidden; overflow-y: auto; }
 .tag-dialog-heading, .metadata-dialog-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
 .tag-dialog-heading h2, .metadata-dialog-heading h2 { margin: 0; font-size: 22px; }
 .tag-dialog-heading p { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
