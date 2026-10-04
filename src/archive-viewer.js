@@ -5,6 +5,7 @@ import { message } from "./i18n.js";
 
 export function createArchiveViewer(panel, content, metadataDialog, metadataContent, { createFavoriteButton, getReturnFocus } = {}) {
   let activeObjectUrl = "";
+  let activeStage = null;
   let renderToken = 0;
   let previousFocus = null;
   let activeNavigation = null;
@@ -55,6 +56,7 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     releaseObjectUrl();
     panel.hidden = true;
     content.replaceChildren();
+    activeStage = null;
     document.documentElement.classList.remove("viewer-open");
     activeStep = null;
     activeNavigation = null;
@@ -78,7 +80,7 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     if (event.target instanceof Element && event.target.matches("input, textarea, [contenteditable='true']")) return;
     if (event.key === "ArrowRight") {
       event.preventDefault();
-      activeStep(1);
+      activeStep(1, event.shiftKey);
     } else if (event.key === "ArrowLeft") {
       event.preventDefault();
       activeStep(-1);
@@ -139,7 +141,6 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
 
   async function showImages(work, { works = null, index = -1, startAtEnd = false } = {}) {
     const token = ++renderToken;
-    releaseObjectUrl();
     openViewer();
     const heading = createViewerHeading(work);
     const favorite = createFavoriteButton?.(work);
@@ -177,6 +178,8 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     };
 
     if (work.imageCount === 0) {
+      releaseObjectUrl();
+      activeStage = null;
       replaceViewerContent(...header, createRecoveryPanel(work));
       activeStep = (delta) => goToAdjacentWork(delta);
       return;
@@ -188,42 +191,61 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
       return targetIndex >= 0 && targetIndex < works.length;
     };
 
-    const stage = document.createElement("div");
+    // Retain the displayed artwork and backdrop until the next image is decoded.
+    const stage = activeStage || document.createElement("div");
+    activeStage = stage;
     stage.className = "viewer-stage";
-    stage.textContent = message("loading");
+    if (!activeObjectUrl) stage.textContent = message("loading");
     controls = createPageControls(work.imageCount, hasAdjacentWork);
     replaceViewerContent(...header, stage, controls.root);
+    let pageRequest = 0;
 
     const renderPage = async (index) => {
+      const request = ++pageRequest;
+      const isCurrent = () => token === renderToken && request === pageRequest;
+      let nextObjectUrl = "";
+      // Track the requested page immediately so repeated keys keep advancing.
+      controls.setIndex(index);
       controls.setLoading(true);
-      stage.textContent = message("loading");
-      releaseObjectUrl();
+      stage.setAttribute("aria-busy", "true");
       try {
         const image = await loadStoredImage(work, index);
-        if (token !== renderToken) return;
+        if (!isCurrent()) return;
         if (!image) throw new Error(message("imageLoadFailed"));
-        activeObjectUrl = URL.createObjectURL(image.blob);
+        nextObjectUrl = URL.createObjectURL(image.blob);
         const backdrop = new Image();
         backdrop.className = "viewer-backdrop";
         backdrop.alt = "";
         backdrop.setAttribute("aria-hidden", "true");
-        backdrop.src = activeObjectUrl;
+        backdrop.src = nextObjectUrl;
         const node = new Image();
         node.className = "viewer-artwork";
         node.alt = message("artworkPageAlt", [work.title, String(index + 1)]);
-        node.src = activeObjectUrl;
+        node.src = nextObjectUrl;
+        await Promise.all([node.decode(), backdrop.decode()]);
+        if (!isCurrent()) return;
         stage.replaceChildren(backdrop, node);
-        controls.setIndex(index);
+        releaseObjectUrl();
+        activeObjectUrl = nextObjectUrl;
+        nextObjectUrl = "";
       } catch {
-        if (token !== renderToken) return;
-        controls.setIndex(index);
+        if (!isCurrent()) return;
         stage.replaceChildren(createRecoveryPanel(work));
+        releaseObjectUrl();
       } finally {
-        if (token === renderToken) controls.setLoading(false);
+        if (nextObjectUrl) URL.revokeObjectURL(nextObjectUrl);
+        if (isCurrent()) {
+          stage.setAttribute("aria-busy", "false");
+          controls.setLoading(false);
+        }
       }
     };
 
-    activeStep = (delta) => {
+    activeStep = (delta, skipPages = false) => {
+      if (skipPages) {
+        goToAdjacentWork(delta);
+        return;
+      }
       const nextPage = controls.index + delta;
       if (nextPage >= 0 && nextPage < work.imageCount) {
         renderPage(nextPage);

@@ -117,6 +117,7 @@
       <div><dt><kbd>⌘ / Ctrl</kbd> + <kbd>A</kbd></dt><dd data-i18n="shortcutSelectAll">Select all visible artworks</dd></div>
       <div><dt><kbd>Esc</kbd></dt><dd data-i18n="shortcutClear">Clear the selection</dd></div>
       <div><dt><kbd>Enter</kbd></dt><dd data-i18n="shortcutOpen">Open the focused image</dd></div>
+      <div><dt><kbd>Shift</kbd> + <kbd>→</kbd></dt><dd data-i18n="shortcutNextArtwork">Skip to the next artwork in the viewer</dd></div>
     </dl>
     <button id="close-shortcuts" data-i18n="close">Close</button>
   </dialog>
@@ -134,6 +135,7 @@
       <span class="visually-hidden" data-i18n="searchTags">Search tags</span>
       <input id="tag-search" type="search" placeholder="Search tags" data-i18n-attrs="placeholder:searchTags">
     </label>
+    <div id="tag-dialog-selected" hidden></div>
     <div id="tag-list" class="tag-list" role="group" aria-label="Filter by tag" data-i18n-attrs="aria-label:filterByTag"></div>
     <p id="no-matching-tags" class="tag-list-empty" data-i18n="noMatchingTags" hidden>No matching tags.</p>
     <div class="tag-dialog-actions">
