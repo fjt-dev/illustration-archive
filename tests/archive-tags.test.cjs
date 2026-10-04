@@ -33,7 +33,9 @@ function createElement(tagName) {
     scrollWidth: 100,
     append(...children) { this.children.push(...children); },
     setAttribute(name, value) { this.attributes[name] = value; },
-    addEventListener() {}
+    listeners: {},
+    addEventListener(name, listener) { this.listeners[name] = listener; },
+    replaceChildren(...children) { this.children = children; }
   };
 }
 
@@ -48,9 +50,9 @@ test('renders the complete tag list by artwork count with tag-name tie breaking'
     CSS: { escape: value => value },
     document: {
       createElement,
-      querySelector: selector => selector === '#clear-tag-selection' ? clearButton : null
+      querySelector: selector => selector === '#clear-tag-selection' ? clearButton : createElement('div')
     },
-    message: (_key, values) => values.join('/'),
+    message: (_key, values) => Array.isArray(values) ? values.join('/') : values,
     noMatchingTags: {},
     popularTags: () => [
       { key: 'beta', label: 'Beta', count: 2 },
@@ -82,7 +84,7 @@ test('filters the complete tag list by its search query', () => {
     activeTags: new Set(),
     applyFilters() {},
     CSS: { escape: value => value },
-    document: { createElement, querySelector: () => ({}) },
+    document: { createElement, querySelector: () => createElement('div') },
     message: () => '',
     noMatchingTags: {},
     popularTags: () => [
@@ -127,7 +129,9 @@ test('renders the 20 most popular tags', () => {
   vm.runInContext(renderTagFiltersSource, context);
   context.renderTagFilters();
 
-  const scrollArea = tagFilters.children[1];
+  assert.equal(tagFilters.children[0].className, "tag-filter favorite-filter");
+  assert.equal(tagFilters.children[1].className, "tag-reset show-all-tags");
+  const scrollArea = tagFilters.children[2];
   assert.equal(scrollArea.children.length, 20);
   assert.equal(scrollArea.children[0].textContent, '#Tag 1');
   assert.equal(scrollArea.children[19].textContent, '#Tag 20');
@@ -232,6 +236,76 @@ test('keeps an active tag visible when its common-tag rank is hidden', () => {
   vm.runInContext(renderTagFiltersSource, context);
   context.renderTagFilters();
 
-  const labels = tagFilters.children[1].children.map(button => button.textContent);
+  const labels = tagFilters.children[2].children.map(button => button.textContent);
   assert.deepEqual(labels, ['#Useful', '#Common']);
+});
+
+
+test('shows every active tag outside the scroll strip, even beyond the popular limit', () => {
+  const allTags = Array.from({ length: 30 }, (_, index) => ({
+    key: `tag-${index}`, label: `Tag ${index}`, hidden: index === 29
+  }));
+  const tagFilters = createElement('nav');
+  tagFilters.querySelector = () => ({ focus() {} });
+  let filterUpdates = 0;
+  const context = {
+    activeTags: new Set(['tag-0', 'tag-25', 'tag-29']),
+    applyFilters() { filterUpdates++; context.renderTagFilters(); },
+    document: { createElement }, favoriteOnly: false,
+    message: (key, value) => `${key}:${value}`,
+    popularTags: () => allTags, selectedIds: new Set(), tagFilters, works: [{}]
+  };
+  vm.createContext(context);
+  vm.runInContext(renderTagFiltersSource, context);
+  context.renderTagFilters();
+  const lane = tagFilters.children.at(-1);
+  assert.equal(lane.className, 'selected-tag-lane');
+  assert.equal(lane.children[1].className, 'tag-reset selected-tag-reset');
+  const summary = lane.children[0];
+  assert.equal(summary.className, 'selected-tag-summary');
+  assert.deepEqual(summary.children.slice(1).map(button => button.children[0].textContent),
+    ['#Tag 0', '#Tag 25', '#Tag 29']);
+  assert.equal(summary.children[0].textContent, 'selectedTagsCount:3');
+  assert.equal(summary.children[2].attributes['aria-label'], 'removeSelectedTag:Tag 25');
+  summary.children[2].listeners.click();
+  assert.equal(context.activeTags.has('tag-25'), false);
+  assert.equal(context.activeTags.has('tag-29'), true);
+  assert.equal(filterUpdates, 1);
+  assert.equal(tagFilters.children.at(-1).children[0].children.length, 3);
+  tagFilters.children.at(-1).children[1].listeners.click();
+  assert.equal(context.activeTags.size, 0);
+  assert.equal(tagFilters.children.some(child => child.className === 'selected-tag-lane'), false);
+  assert.equal(filterUpdates, 2);
+});
+
+test('keeps selected tags visible and removable while dialog search has no matches', () => {
+  const selectedTags = createElement('div');
+  const clearButton = {};
+  let filterUpdates = 0;
+  let searchFocus = 0;
+  const context = {
+    activeTags: new Set(['portrait']),
+    applyFilters() { filterUpdates++; },
+    document: { createElement, querySelector: selector =>
+      selector === '#tag-dialog-selected' ? selectedTags : clearButton },
+    message: (key, value) => `${key}:${value}`,
+    popularTags: () => [{ key: 'portrait', label: 'Portrait', count: 3 }],
+    noMatchingTags: {}, tagDialogSummary: {}, tagList: createElement('div'),
+    tagSearchInput: { focus() { searchFocus++; } },
+    tagSearchQuery: 'no matches', uiLocale: 'en'
+  };
+  vm.createContext(context);
+  vm.runInContext(renderTagListSource, context);
+  context.renderTagList();
+  assert.equal(context.tagList.children.length, 0);
+  assert.equal(context.noMatchingTags.hidden, false);
+  assert.equal(selectedTags.hidden, false);
+  assert.equal(selectedTags.children[0].children[1].children[0].textContent, '#Portrait');
+  selectedTags.children[0].children[1].listeners.click();
+  assert.equal(context.activeTags.size, 0);
+  assert.equal(selectedTags.hidden, true);
+  assert.equal(selectedTags.children.length, 0);
+  assert.equal(clearButton.disabled, true);
+  assert.equal(filterUpdates, 1);
+  assert.equal(searchFocus, 1);
 });

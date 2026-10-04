@@ -60,6 +60,8 @@ Firefox is not currently supported.
 - The tag filters scroll horizontally, while the Favorites filter stays pinned to the left. Tags are ranked by how useful they are for narrowing the archive, and tags shared by at least 80% of 30 or more artworks are hidden.
 - Open **All tags** to browse every tag with its artwork count, search the list, and select multiple tags. Multi-tag filters show artworks containing every selected tag; use **Reset tags** to clear them all at once.
 
+- Selected tags appear together below the tag bar and can be removed individually with their × buttons. The All tags dialog keeps selected tags visible separately from search results.
+
 ### Hide-titles mode
 
 - Select the four-square icon (**Hide titles**) at the top of the archive to switch to an image-focused layout with tiles sized to each image's aspect ratio. Select the card icon with lines below the image (**Standard view**) to switch back. Hover over either icon to see its name.
@@ -76,6 +78,8 @@ Firefox is not currently supported.
 - Select the heart above the bottom-right navigation arrows to add or remove the artwork from Favorites. The state stays in sync with the archive cards, with animated feedback that respects reduced-motion preferences.
 - Select **Close** at the top right or press Esc to return to the archive.
 - Use `←` / `→` to move between pages. At the first or last page of an artwork, navigation continues automatically to the previous or next artwork in the archive. The same behavior applies to single-page artworks.
+
+- Use `Shift + →` to skip the remaining pages and open the next artwork at its first page. At the last artwork, this shortcut does nothing.
 
 ### Recording images
 
@@ -108,6 +112,7 @@ Recording the same artwork again replaces files with the same names. Deleting an
 | `Esc`                  | Clear selection or close an open menu or viewer |
 | `Enter`                | Open the focused artwork in the viewer          |
 | `←` / `→`              | Move between pages and artworks in the viewer   |
+| `Shift + →`            | Skip remaining pages and open the next artwork |
 
 ## Permissions
 

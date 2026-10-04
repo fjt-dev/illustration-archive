@@ -751,7 +751,7 @@ function renderTagFilters() {
   scrollArea.className = "tag-filters-scroll";
   scrollArea.append(...buttons);
   scrollArea.addEventListener("scroll", () => updateTagScrollFade(scrollArea), { passive: true });
-  const children = [favorite, scrollArea];
+  const children = [favorite];
   const showAll = document.createElement("button");
   showAll.type = "button";
   showAll.className = "tag-reset show-all-tags";
@@ -763,17 +763,25 @@ function renderTagFilters() {
     tagDialog.showModal();
     tagSearchInput.focus();
   });
-  children.push(showAll);
+  children.push(showAll, scrollArea);
   if (activeTags.size > 0) {
+    const lane = document.createElement("div");
+    lane.className = "selected-tag-lane";
+    const summary = createSelectedTagSummary(allTags, () => {
+      applyFilters();
+      tagFilters.querySelector(".show-all-tags")?.focus();
+    });
     const reset = document.createElement("button");
     reset.type = "button";
-    reset.className = "tag-reset";
+    reset.className = "tag-reset selected-tag-reset";
     reset.textContent = message("resetTags");
     reset.addEventListener("click", () => {
       activeTags.clear();
       applyFilters();
+      tagFilters.querySelector(".show-all-tags")?.focus();
     });
-    children.push(reset);
+    lane.append(summary, reset);
+    children.push(lane);
   }
   tagFilters.replaceChildren(...children);
   updateTagScrollFade(scrollArea);
@@ -798,6 +806,7 @@ function renderTagList() {
 
     const label = document.createElement("span");
     label.textContent = `#${tag.label}`;
+    button.title = label.textContent;
     const count = document.createElement("span");
     count.className = "tag-list-count";
     count.textContent = String(tag.count);
@@ -812,10 +821,48 @@ function renderTagList() {
     button.dataset.tagKey = tag.key;
     return button;
   });
+  const selectedTags = document.querySelector("#tag-dialog-selected");
+  selectedTags.replaceChildren();
+  selectedTags.hidden = activeTags.size === 0;
+  if (activeTags.size > 0) {
+    selectedTags.append(createSelectedTagSummary(allTags, () => {
+      applyFilters();
+      renderTagList();
+      tagSearchInput.focus();
+    }));
+  }
   tagList.replaceChildren(...buttons);
   noMatchingTags.hidden = tags.length > 0;
   tagDialogSummary.textContent = message("tagListSummary", [String(allTags.length), String(activeTags.size)]);
   document.querySelector("#clear-tag-selection").disabled = activeTags.size === 0;
+}
+
+function createSelectedTagSummary(allTags, onRemove) {
+  const summary = document.createElement("div");
+  summary.className = "selected-tag-summary";
+  const heading = document.createElement("span");
+  heading.className = "selected-tag-heading";
+  heading.textContent = message("selectedTagsCount", String(activeTags.size));
+  summary.append(heading);
+  allTags.filter((tag) => activeTags.has(tag.key)).forEach((tag) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "selected-tag-remove";
+    button.setAttribute("aria-label", message("removeSelectedTag", tag.label));
+    button.title = message("removeSelectedTag", tag.label);
+    const label = document.createElement("span");
+    label.textContent = `#${tag.label}`;
+    const remove = document.createElement("span");
+    remove.textContent = "×";
+    remove.setAttribute("aria-hidden", "true");
+    button.append(label, remove);
+    button.addEventListener("click", () => {
+      activeTags.delete(tag.key);
+      onRemove();
+    });
+    summary.append(button);
+  });
+  return summary;
 }
 
 function popularTags() {

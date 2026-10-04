@@ -78,7 +78,7 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
     if (event.target instanceof Element && event.target.matches("input, textarea, [contenteditable='true']")) return;
     if (event.key === "ArrowRight") {
       event.preventDefault();
-      activeStep(1);
+      activeStep(1, event.shiftKey);
     } else if (event.key === "ArrowLeft") {
       event.preventDefault();
       activeStep(-1);
@@ -223,7 +223,11 @@ export function createArchiveViewer(panel, content, metadataDialog, metadataCont
       }
     };
 
-    activeStep = (delta) => {
+    activeStep = (delta, skipPages = false) => {
+      if (skipPages) {
+        goToAdjacentWork(delta);
+        return;
+      }
       const nextPage = controls.index + delta;
       if (nextPage >= 0 && nextPage < work.imageCount) {
         renderPage(nextPage);

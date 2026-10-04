@@ -108,7 +108,7 @@ function setupViewer(getReturnFocus) {
   const panel = element(), content = element(), close = element(), returnControl = element();
   panel.hidden = true;
   panel.querySelector = () => close;
-  const keys = {}, frames = [];
+  const keys = {}, frames = [], requestedPages = [];
   const context = {
     document: {
       activeElement: null,
@@ -116,7 +116,7 @@ function setupViewer(getReturnFocus) {
       documentElement: { classList: { add() {}, remove() {} } }
     },
     requestAnimationFrame: fn => frames.push(fn),
-    message: key => key, getImage: async () => null, readArchiveImage: async () => null,
+    message: key => key, getImage: async (id, page) => { requestedPages.push([id, page]); return null; }, readArchiveImage: async () => null,
     Element: TestElement, HTMLElement: TestElement, URL: { revokeObjectURL() {} }
   };
   vm.createContext(context);
@@ -126,10 +126,10 @@ function setupViewer(getReturnFocus) {
     getReturnFocus: getReturnFocus || (() => returnControl)
   });
   return {
-    viewer, content, panel, close, returnControl, element,
+    viewer, content, panel, close, returnControl, element, requestedPages,
     document: context.document,
     flushFrames: () => { while (frames.length) frames.shift()(); },
-    step: key => keys.keydown({ key, preventDefault() {} })
+    step: (key, shiftKey = false) => keys.keydown({ key, shiftKey, preventDefault() {} })
   };
 }
 
@@ -302,3 +302,31 @@ for (const buttonIndex of [0, 1]) {
     assert.equal(context.filterUpdates, 1);
   });
 }
+
+
+test('Shift + Right skips remaining pages and opens the next artwork at its first page', async () => {
+  const { viewer, content, step, requestedPages } = setupViewer();
+  const works = [{ id: '1', imageCount: 4 }, { id: '2', imageCount: 3 }];
+  await viewer.showImages(works[0], { works, index: 0 });
+  step('ArrowRight');
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(content.children[1].workId, '1');
+  assert.deepEqual(requestedPages.at(-1), ['1', 1]);
+  step('ArrowRight', true);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(content.children[1].workId, '2');
+  assert.deepEqual(requestedPages.at(-1), ['2', 0]);
+});
+
+test('Shift + Right at the last artwork does not advance pages or wrap to the first artwork', async () => {
+  const { viewer, content, step, requestedPages } = setupViewer();
+  const works = [{ id: '1', imageCount: 4 }, { id: '2', imageCount: 3 }];
+  await viewer.showImages(works[1], { works, index: 1 });
+  step('ArrowRight', true);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(content.children[1].workId, '2');
+  assert.deepEqual(requestedPages, [['2', 0]]);
+  viewer.close();
+  step('ArrowRight', true);
+  assert.equal(requestedPages.length, 1);
+});
