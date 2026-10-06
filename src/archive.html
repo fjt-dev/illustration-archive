@@ -30,14 +30,6 @@
         </div>
       </details>
       <div class="display-controls">
-        <div class="view-mode" role="group" aria-label="Artwork display mode" data-i18n-attrs="aria-label:viewMode">
-          <button type="button" data-view-mode="standard" aria-pressed="true" aria-label="Standard view" title="Standard view" data-i18n-attrs="aria-label:standardView,title:standardView">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="7" height="10" rx="1"></rect><rect x="14" y="4" width="7" height="10" rx="1"></rect><path d="M3 18h7M14 18h7M3 21h4M14 21h4"></path></svg>
-          </button>
-          <button type="button" data-view-mode="infinite" aria-pressed="false" aria-label="Hide titles" title="Hide titles" data-i18n-attrs="aria-label:hideTitles,title:hideTitles">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg>
-          </button>
-        </div>
         <details id="theme-menu" class="theme-menu">
           <summary id="theme-toggle" aria-haspopup="menu" aria-label="Choose theme" data-i18n-attrs="aria-label:chooseTheme">
             <svg data-theme-current-icon viewBox="0 0 24 24" aria-hidden="true">
@@ -86,7 +78,7 @@
       </div>
     </div>
   </div>
-  <main id="works" class="grid"></main>
+  <main id="works" class="grid infinite-grid"></main>
   <div id="scroll-footer" class="scroll-footer" hidden>
     <p id="scroll-status" role="status" aria-live="polite"></p>
     <button id="load-more" type="button" data-i18n="loadMore">Load more</button>
