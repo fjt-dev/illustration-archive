@@ -115,8 +115,6 @@ let searchHistory = Array.isArray(storedSearchHistory)
   : [];
 let activeSearchSuggestion = -1;
 let renderedCount = 0;
-let viewMode = (await chrome.storage.local.get("archiveViewMode")).archiveViewMode === "infinite"
-  ? "infinite" : "standard";
 const scrollFooter = document.querySelector("#scroll-footer");
 const scrollStatus = document.querySelector("#scroll-status");
 const loadMoreButton = document.querySelector("#load-more");
@@ -138,18 +136,19 @@ const thumbnailObserver = new IntersectionObserver((entries) => {
 }, { rootMargin: "400px 0px" });
 let masonryLayoutFrame = 0;
 function updateMasonryTile(article) {
-  if (viewMode !== "infinite" || !article.isConnected) return;
+  if (!article.isConnected) return;
   const width = article.getBoundingClientRect().width;
   const ratio = Number(article.dataset.tileRatio) || 1;
+  const infoHeight = article.querySelector(".card-info").getBoundingClientRect().height;
   const styles = getComputedStyle(grid);
   const row = parseFloat(styles.gridAutoRows);
   const gap = parseFloat(styles.rowGap);
   if (!width || !row || !Number.isFinite(gap)) return;
-  article.style.gridRowEnd = `span ${Math.ceil((width / ratio + gap) / (row + gap))}`;
+  article.style.gridRowEnd = `span ${Math.ceil((width / ratio + infoHeight + gap) / (row + gap))}`;
 }
 
 function scheduleMasonryLayout() {
-  if (viewMode !== "infinite" || masonryLayoutFrame) return;
+  if (masonryLayoutFrame) return;
   masonryLayoutFrame = requestAnimationFrame(() => {
     masonryLayoutFrame = 0;
     grid.querySelectorAll("article").forEach(updateMasonryTile);
@@ -157,7 +156,6 @@ function scheduleMasonryLayout() {
 }
 
 function onThumbnailLoaded(thumbnail) {
-  if (viewMode !== "infinite") return;
   const article = thumbnail.closest("article");
   if (!article || !thumbnail.naturalWidth || !thumbnail.naturalHeight) return;
   const ratio = thumbnail.naturalWidth / thumbnail.naturalHeight;
@@ -168,15 +166,6 @@ function onThumbnailLoaded(thumbnail) {
 
 window.addEventListener("resize", scheduleMasonryLayout);
 loadMoreButton.addEventListener("click", appendNextBatch);
-document.querySelectorAll("[data-view-mode]").forEach((button) => {
-  button.addEventListener("click", () => {
-    if (viewMode === button.dataset.viewMode) return;
-    viewMode = button.dataset.viewMode;
-    render(visibleWorks, { reset: true });
-    chrome.storage.local.set({ archiveViewMode: viewMode }).catch(console.error);
-    window.scrollTo({ top: 0, behavior: "instant" });
-  });
-});
 
 function compareDates(a, b, direction) {
   const aTime = a ? new Date(a).getTime() : NaN;
@@ -672,14 +661,8 @@ function render(items, { reset = false } = {}) {
   scrollObserver.disconnect();
   thumbnailObserver.disconnect();
   // Return to the beginning before shrinking the grid and observing its footer again.
-  if (reset && viewMode === "infinite") window.scrollTo({ top: 0, behavior: "instant" });
-  grid.classList.toggle("infinite-grid", viewMode === "infinite");
-  document.querySelectorAll("[data-view-mode]").forEach((button) => {
-    button.setAttribute("aria-pressed", String(button.dataset.viewMode === viewMode));
-  });
-  renderedCount = viewMode === "infinite"
-    ? Math.min(items.length, reset ? BATCH_SIZE : Math.max(BATCH_SIZE, renderedCount))
-    : items.length;
+  if (reset) window.scrollTo({ top: 0, behavior: "instant" });
+  renderedCount = Math.min(items.length, reset ? BATCH_SIZE : Math.max(BATCH_SIZE, renderedCount));
   for (const node of grid.querySelectorAll(".thumb-content")) archiveViewer.unloadThumbnail(node);
   grid.replaceChildren(...items.slice(0, renderedCount).map(card));
   scheduleMasonryLayout();
@@ -689,7 +672,7 @@ function render(items, { reset = false } = {}) {
 }
 
 function updateScrollFooter() {
-  scrollFooter.hidden = viewMode !== "infinite" || visibleWorks.length === 0;
+  scrollFooter.hidden = visibleWorks.length === 0;
   const hasMore = renderedCount < visibleWorks.length;
   loadMoreButton.hidden = !hasMore;
   scrollStatus.textContent = hasMore
@@ -699,7 +682,7 @@ function updateScrollFooter() {
 }
 
 function appendNextBatch() {
-  if (viewMode !== "infinite" || renderedCount >= visibleWorks.length) return;
+  if (renderedCount >= visibleWorks.length) return;
   scrollObserver.disconnect();
   const nextCount = Math.min(renderedCount + BATCH_SIZE, visibleWorks.length);
   grid.append(...visibleWorks.slice(renderedCount, nextCount).map(card));
@@ -929,9 +912,15 @@ function card(work) {
       toggleSelection();
     }
   });
-  article.querySelector("h2").textContent = work.title;
-  article.querySelector(".creator").textContent = work.creatorName || message("unknownArtist");
-  article.querySelector(".meta").textContent = message("imageCountAndSize", [String(work.imageCount), formatBytes(work.byteSize)]);
+  const title = article.querySelector("h2");
+  title.textContent = work.title;
+  title.title = work.title;
+  const creator = article.querySelector(".creator");
+  creator.textContent = work.creatorName || message("unknownArtist");
+  creator.title = creator.textContent;
+  const meta = article.querySelector(".meta");
+  meta.textContent = message("imageCountAndSize", [String(work.imageCount), formatBytes(work.byteSize)]);
+  meta.title = meta.textContent;
   const sourceLink = article.querySelector("[data-source]");
   if (work.sourceUrl) sourceLink.href = work.sourceUrl;
   else sourceLink.hidden = true;

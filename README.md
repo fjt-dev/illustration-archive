@@ -62,14 +62,14 @@ Firefox is not currently supported.
 
 - Selected tags appear together below the tag bar and can be removed individually with their × buttons. The All tags dialog keeps selected tags visible separately from search results.
 
-### Hide-titles mode
+### Archive layout
 
-- Select the four-square icon (**Hide titles**) at the top of the archive to switch to an image-focused layout with tiles sized to each image's aspect ratio. Select the card icon with lines below the image (**Standard view**) to switch back. Hover over either icon to see its name.
+- Artwork appears in tiles sized to each image's aspect ratio, with the title, artist, image count, and size below each image.
 - Scrolling automatically loads 36 more artworks at a time. You can also select **Load more**.
 - Search, tags, favorites, and sorting remain active. Loading stops after all matching archived artworks are displayed, without repeating any artwork.
-- Select a tile to open the viewer at the image's original aspect ratio. The heart button is hidden in tile view, so change favorites in standard view or in the image viewer. Selection and artwork menus are available in both modes.
+- Select an image to open the viewer at its original aspect ratio. Favorites, selection, and artwork menus are available in the archive.
 - Selection checkboxes appear on hover or keyboard focus and remain visible for selected artworks. They are always visible on touch devices.
-- The display mode is remembered for your next visit. **Select all** applies to the complete filtered result, including items that have not yet loaded.
+- **Select all** applies to the complete filtered result, including items that have not yet loaded.
 
 ### Image viewer
 
